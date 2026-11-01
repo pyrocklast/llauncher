@@ -11,33 +11,18 @@ import android.os.UserManager
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
-import androidx.work.BackoffPolicy
-import androidx.work.Constraints
-import androidx.work.ExistingPeriodicWorkPolicy
-import androidx.work.NetworkType
-import androidx.work.PeriodicWorkRequestBuilder
-import androidx.work.WorkManager
 import app.olauncher.data.AppModel
 import app.olauncher.data.Constants
 import app.olauncher.data.Prefs
 import app.olauncher.helper.SingleLiveEvent
-import app.olauncher.helper.WallpaperWorker
-import app.olauncher.helper.formattedTimeSpent
 import app.olauncher.helper.getAppsList
 import app.olauncher.helper.getPrivateSpaceApps
 import app.olauncher.helper.getPrivateSpaceUserHandle
-import app.olauncher.helper.hasBeenMinutes
 import app.olauncher.helper.isOlauncherDefault
 import app.olauncher.helper.isPackageInstalled
 import app.olauncher.helper.isPrivateSpaceLocked
 import app.olauncher.helper.showToast
-import app.olauncher.helper.usageStats.EventLogWrapper
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.util.Calendar
-import java.util.concurrent.TimeUnit
 
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
@@ -53,8 +38,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val isOlauncherDefault = MutableLiveData<Boolean>()
     val launcherResetFailed = MutableLiveData<Boolean>()
     val homeAppAlignment = MutableLiveData<Int>()
-    val screenTimeValue = MutableLiveData<String>()
-    private var screenTimeJob: Job? = null
 
     val privateSpaceApps = MutableLiveData<List<AppModel>?>()
     val privateSpaceLocked = MutableLiveData<Boolean>()
@@ -64,7 +47,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     var isPrivateSpaceToggling = false
 
     val showDialog = SingleLiveEvent<String>()
-    val checkForMessages = SingleLiveEvent<Unit?>()
     val resetLauncherLiveData = SingleLiveEvent<Unit?>()
     // Home button for recents feature disabled
     // val showRecentApps = SingleLiveEvent<Unit?>()
@@ -101,7 +83,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             Constants.FLAG_SET_SWIPE_RIGHT_APP -> saveSwipeApp(appModel, isLeft = false)
             Constants.FLAG_SET_CLOCK_APP -> saveClockApp(appModel)
             Constants.FLAG_SET_CALENDAR_APP -> saveCalendarApp(appModel)
-            Constants.FLAG_SET_SCREEN_TIME_APP -> saveScreenTimeApp(appModel)
         }
     }
 
@@ -340,14 +321,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    private fun saveScreenTimeApp(appModel: AppModel) {
-        if (appModel is AppModel.App) {
-            prefs.screenTimeAppPackage = appModel.appPackage
-            prefs.screenTimeAppUser = appModel.user.toString()
-            prefs.screenTimeAppClassName = appModel.activityClassName
-        }
-    }
-
     fun firstOpen(value: Boolean) {
         firstOpen.postValue(value)
     }
@@ -417,62 +390,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         isOlauncherDefault.value = isOlauncherDefault(appContext)
     }
 
-    fun setWallpaperWorker() {
-        val constraints = Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.CONNECTED)
-            .build()
-        val uploadWorkRequest = PeriodicWorkRequestBuilder<WallpaperWorker>(4, TimeUnit.HOURS)
-            .setBackoffCriteria(BackoffPolicy.LINEAR, 1, TimeUnit.HOURS)
-            .setConstraints(constraints)
-            .build()
-        WorkManager
-            .getInstance(appContext)
-            .enqueueUniquePeriodicWork(
-                Constants.WALLPAPER_WORKER_NAME,
-                ExistingPeriodicWorkPolicy.CANCEL_AND_REENQUEUE,
-                uploadWorkRequest
-            )
-    }
-
-    fun cancelWallpaperWorker() {
-        WorkManager.getInstance(appContext).cancelUniqueWork(Constants.WALLPAPER_WORKER_NAME)
-        prefs.dailyWallpaperUrl = ""
-        prefs.dailyWallpaper = false
-    }
-
     fun updateHomeAlignment(gravity: Int) {
         prefs.homeAlignment = gravity
         homeAppAlignment.value = prefs.homeAlignment
-    }
-
-    fun getTodaysScreenTime() {
-        // Skip the once-a-minute limit when there's nothing to show yet, e.g. after a process restart
-        if (screenTimeValue.value != null && prefs.screenTimeLastUpdated.hasBeenMinutes(1).not()) return
-        if (screenTimeJob?.isActive == true) return
-
-        screenTimeJob = viewModelScope.launch {
-            // Start of today in millis
-            val calendar = Calendar.getInstance().apply {
-                set(Calendar.HOUR_OF_DAY, 0)
-                set(Calendar.MINUTE, 0)
-                set(Calendar.SECOND, 0)
-                set(Calendar.MILLISECOND, 0)
-            }
-            val startTime = calendar.timeInMillis
-            val endTime = System.currentTimeMillis()
-
-            // Querying a whole day of usage events is slow, so keep it off the main thread
-            val timeSpent = withContext(Dispatchers.IO) {
-                val eventLogWrapper = EventLogWrapper(appContext)
-                eventLogWrapper.aggregateSimpleUsageStats(
-                    eventLogWrapper.aggregateForegroundStats(
-                        eventLogWrapper.getForegroundStatsByTimestamps(startTime, endTime)
-                    )
-                )
-            }
-            screenTimeValue.value = appContext.formattedTimeSpent(timeSpent)
-            prefs.screenTimeLastUpdated = endTime
-        }
     }
 
     fun getPrivateSpaceAppList() {

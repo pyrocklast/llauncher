@@ -245,7 +245,7 @@ class AppDrawerFragment : BaseFragment() {
                 val scrollRange = super.scrollVerticallyBy(dx, recycler, state)
                 val overScroll = dx - scrollRange
                 if (overScroll < -10 && binding.recyclerView.scrollState == RecyclerView.SCROLL_STATE_DRAGGING)
-                    checkMessageAndExit()
+                    closeDrawer()
                 return scrollRange
             }
         }
@@ -355,12 +355,6 @@ class AppDrawerFragment : BaseFragment() {
                 }
             }
         }
-    }
-
-    private fun checkMessageAndExit() {
-        if (!closeDrawer()) return
-        if (flag == Constants.FLAG_LAUNCH_APP)
-            viewModel.checkForMessages.call()
     }
 
     // Pops only the drawer. A plain popBackStack() from a late overscroll frame could pop the

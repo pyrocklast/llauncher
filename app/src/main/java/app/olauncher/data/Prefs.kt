@@ -10,16 +10,11 @@ class Prefs(context: Context) {
     private val PREFS_FILENAME = "app.olauncher"
 
     private val FIRST_OPEN = "FIRST_OPEN"
-    private val FIRST_OPEN_TIME = "FIRST_OPEN_TIME"
     private val FIRST_SETTINGS_OPEN = "FIRST_SETTINGS_OPEN"
     private val FIRST_HIDE = "FIRST_HIDE"
-    private val USER_STATE = "USER_STATE"
     private val LOCK_MODE = "LOCK_MODE"
     private val HOME_APPS_NUM = "HOME_APPS_NUM"
     private val AUTO_SHOW_KEYBOARD = "AUTO_SHOW_KEYBOARD"
-    private val KEYBOARD_MESSAGE = "KEYBOARD_MESSAGE"
-    private val DAILY_WALLPAPER = "DAILY_WALLPAPER"
-    private val DAILY_WALLPAPER_URL = "DAILY_WALLPAPER_URL"
     private val HOME_ALIGNMENT = "HOME_ALIGNMENT"
     private val HOME_BOTTOM_ALIGNMENT = "HOME_BOTTOM_ALIGNMENT"
     private val APP_LABEL_ALIGNMENT = "APP_LABEL_ALIGNMENT"
@@ -29,19 +24,11 @@ class Prefs(context: Context) {
     private val SWIPE_RIGHT_ENABLED = "SWIPE_RIGHT_ENABLED"
     private val HIDDEN_APPS = "HIDDEN_APPS"
     private val HIDDEN_APPS_UPDATED = "HIDDEN_APPS_UPDATED"
-    private val SHOW_HINT_COUNTER = "SHOW_HINT_COUNTER"
     private val APP_THEME = "APP_THEME"
-    private val ABOUT_CLICKED = "ABOUT_CLICKED"
-    private val RATE_CLICKED = "RATE_CLICKED"
-    private val WALLPAPER_MSG_SHOWN = "WALLPAPER_MSG_SHOWN"
-    private val SHARE_SHOWN_TIME = "SHARE_SHOWN_TIME"
     private val TEXT_SIZE_SCALE = "TEXT_SIZE_SCALE"
     private val BOLD_FONT = "BOLD_FONT"
-    private val PRO_MESSAGE_SHOWN = "PRO_MESSAGE_SHOWN"
     private val HIDE_SET_DEFAULT_LAUNCHER = "HIDE_SET_DEFAULT_LAUNCHER"
-    private val SCREEN_TIME_LAST_UPDATED = "SCREEN_TIME_LAST_UPDATED"
     private val LAUNCHER_RESTART_TIMESTAMP = "LAUNCHER_RECREATE_TIMESTAMP"
-    private val SHOWN_ON_DAY_OF_YEAR = "SHOWN_ON_DAY_OF_YEAR"
     // Home button for recents feature disabled
     // private val HOME_BUTTON_SHOW_RECENTS = "HOME_BUTTON_SHOW_RECENTS"
 
@@ -92,9 +79,6 @@ class Prefs(context: Context) {
     private val CALENDAR_APP_PACKAGE = "CALENDAR_APP_PACKAGE"
     private val CALENDAR_APP_USER = "CALENDAR_APP_USER"
     private val CALENDAR_APP_CLASS_NAME = "CALENDAR_APP_CLASS_NAME"
-    private val SCREEN_TIME_APP_PACKAGE = "SCREEN_TIME_APP_PACKAGE"
-    private val SCREEN_TIME_APP_USER = "SCREEN_TIME_APP_USER"
-    private val SCREEN_TIME_APP_CLASS_NAME = "SCREEN_TIME_APP_CLASS_NAME"
 
     private val IS_SHORTCUT_1 = "IS_SHORTCUT_1"
     private val SHORTCUT_ID_1 = "SHORTCUT_ID_1"
@@ -124,10 +108,6 @@ class Prefs(context: Context) {
         get() = prefs.getBoolean(FIRST_OPEN, true)
         set(value) = prefs.edit { putBoolean(FIRST_OPEN, value).apply() }
 
-    var firstOpenTime: Long
-        get() = prefs.getLong(FIRST_OPEN_TIME, 0L)
-        set(value) = prefs.edit { putLong(FIRST_OPEN_TIME, value).apply() }
-
     var firstSettingsOpen: Boolean
         get() = prefs.getBoolean(FIRST_SETTINGS_OPEN, true)
         set(value) = prefs.edit { putBoolean(FIRST_SETTINGS_OPEN, value).apply() }
@@ -136,10 +116,6 @@ class Prefs(context: Context) {
         get() = prefs.getBoolean(FIRST_HIDE, true)
         set(value) = prefs.edit { putBoolean(FIRST_HIDE, value).apply() }
 
-    var userState: String
-        get() = prefs.getString(USER_STATE, Constants.UserState.START).toString()
-        set(value) = prefs.edit { putString(USER_STATE, value).apply() }
-
     var lockModeOn: Boolean
         get() = prefs.getBoolean(LOCK_MODE, false)
         set(value) = prefs.edit { putBoolean(LOCK_MODE, value).apply() }
@@ -147,18 +123,6 @@ class Prefs(context: Context) {
     var autoShowKeyboard: Boolean
         get() = prefs.getBoolean(AUTO_SHOW_KEYBOARD, true)
         set(value) = prefs.edit { putBoolean(AUTO_SHOW_KEYBOARD, value).apply() }
-
-    var keyboardMessageShown: Boolean
-        get() = prefs.getBoolean(KEYBOARD_MESSAGE, false)
-        set(value) = prefs.edit { putBoolean(KEYBOARD_MESSAGE, value).apply() }
-
-    var dailyWallpaper: Boolean
-        get() = prefs.getBoolean(DAILY_WALLPAPER, false)
-        set(value) = prefs.edit { putBoolean(DAILY_WALLPAPER, value).apply() }
-
-    var dailyWallpaperUrl: String
-        get() = prefs.getString(DAILY_WALLPAPER_URL, "").toString()
-        set(value) = prefs.edit { putString(DAILY_WALLPAPER_URL, value).apply() }
 
     var homeAppsNum: Int
         get() = prefs.getInt(HOME_APPS_NUM, 4)
@@ -204,25 +168,13 @@ class Prefs(context: Context) {
         get() = prefs.getBoolean(BOLD_FONT, false)
         set(value) = prefs.edit { putBoolean(BOLD_FONT, value).apply() }
 
-    var proMessageShown: Boolean
-        get() = prefs.getBoolean(PRO_MESSAGE_SHOWN, false)
-        set(value) = prefs.edit { putBoolean(PRO_MESSAGE_SHOWN, value).apply() }
-
     var hideSetDefaultLauncher: Boolean
         get() = prefs.getBoolean(HIDE_SET_DEFAULT_LAUNCHER, false)
         set(value) = prefs.edit { putBoolean(HIDE_SET_DEFAULT_LAUNCHER, value).apply() }
 
-    var screenTimeLastUpdated: Long
-        get() = prefs.getLong(SCREEN_TIME_LAST_UPDATED, 0L)
-        set(value) = prefs.edit { putLong(SCREEN_TIME_LAST_UPDATED, value).apply() }
-
     var launcherRestartTimestamp: Long
         get() = prefs.getLong(LAUNCHER_RESTART_TIMESTAMP, 0L)
         set(value) = prefs.edit { putLong(LAUNCHER_RESTART_TIMESTAMP, value).apply() }
-
-    var shownOnDayOfYear: Int
-        get() = prefs.getInt(SHOWN_ON_DAY_OF_YEAR, 0)
-        set(value) = prefs.edit { putInt(SHOWN_ON_DAY_OF_YEAR, value).apply() }
 
     // Home button for recents feature disabled
     // var homeButtonShowRecents: Boolean
@@ -236,26 +188,6 @@ class Prefs(context: Context) {
     var hiddenAppsUpdated: Boolean
         get() = prefs.getBoolean(HIDDEN_APPS_UPDATED, false)
         set(value) = prefs.edit { putBoolean(HIDDEN_APPS_UPDATED, value).apply() }
-
-    var toShowHintCounter: Int
-        get() = prefs.getInt(SHOW_HINT_COUNTER, 1)
-        set(value) = prefs.edit { putInt(SHOW_HINT_COUNTER, value).apply() }
-
-    var aboutClicked: Boolean
-        get() = prefs.getBoolean(ABOUT_CLICKED, false)
-        set(value) = prefs.edit { putBoolean(ABOUT_CLICKED, value).apply() }
-
-    var rateClicked: Boolean
-        get() = prefs.getBoolean(RATE_CLICKED, false)
-        set(value) = prefs.edit { putBoolean(RATE_CLICKED, value).apply() }
-
-    var wallpaperMsgShown: Boolean
-        get() = prefs.getBoolean(WALLPAPER_MSG_SHOWN, false)
-        set(value) = prefs.edit { putBoolean(WALLPAPER_MSG_SHOWN, value).apply() }
-
-    var shareShownTime: Long
-        get() = prefs.getLong(SHARE_SHOWN_TIME, 0L)
-        set(value) = prefs.edit { putLong(SHARE_SHOWN_TIME, value).apply() }
 
     var appName1: String
         get() = prefs.getString(APP_NAME_1, "").toString()
@@ -441,18 +373,6 @@ class Prefs(context: Context) {
         get() = prefs.getString(CALENDAR_APP_CLASS_NAME, "").toString()
         set(value) = prefs.edit { putString(CALENDAR_APP_CLASS_NAME, value).apply() }
 
-    var screenTimeAppPackage: String
-        get() = prefs.getString(SCREEN_TIME_APP_PACKAGE, "").toString()
-        set(value) = prefs.edit { putString(SCREEN_TIME_APP_PACKAGE, value).apply() }
-
-    var screenTimeAppUser: String
-        get() = prefs.getString(SCREEN_TIME_APP_USER, "").toString()
-        set(value) = prefs.edit { putString(SCREEN_TIME_APP_USER, value).apply() }
-
-    var screenTimeAppClassName: String?
-        get() = prefs.getString(SCREEN_TIME_APP_CLASS_NAME, "").toString()
-        set(value) = prefs.edit { putString(SCREEN_TIME_APP_CLASS_NAME, value).apply() }
-
     var isShortcut1: Boolean
         get() = prefs.getBoolean(IS_SHORTCUT_1, false)
         set(value) = prefs.edit { putBoolean(IS_SHORTCUT_1, value) }
@@ -636,7 +556,6 @@ class Prefs(context: Context) {
         }
         if (clockAppPackage == packageName) clockAppClassName = activityClassName
         if (calendarAppPackage == packageName) calendarAppClassName = activityClassName
-        if (screenTimeAppPackage == packageName) screenTimeAppClassName = activityClassName
         if (appPackageSwipeLeft == packageName) appActivityClassNameSwipeLeft = activityClassName
         if (appPackageSwipeRight == packageName) appActivityClassNameRight = activityClassName
     }
