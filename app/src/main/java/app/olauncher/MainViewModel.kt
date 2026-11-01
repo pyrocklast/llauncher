@@ -18,11 +18,17 @@ import app.olauncher.helper.SingleLiveEvent
 import app.olauncher.helper.getAppsList
 import app.olauncher.helper.getPrivateSpaceApps
 import app.olauncher.helper.getPrivateSpaceUserHandle
+import app.olauncher.helper.getUserHandleFromString
+import app.olauncher.helper.hasBeenHours
 import app.olauncher.helper.isOlauncherDefault
 import app.olauncher.helper.isPackageInstalled
 import app.olauncher.helper.isPrivateSpaceLocked
 import app.olauncher.helper.showToast
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
@@ -45,6 +51,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     // Suppress backToHomeScreen during Private Space lock/unlock auth
     var isPrivateSpaceToggling = false
+
+    // Lite: the app list is cached instead of reloaded every time you return home. It reloads
+    // when apps change, when hidden apps or names change, and at most hourly as a safety net.
+    private var appListJob: Job? = null
+    private var appsChangedJob: Job? = null
+    private var appListIncludesHidden = false
+    private var appListLoadedAt = 0L
+    private var appListStale = true
+
+    // Lite: home apps are checked off the main thread, and only after apps or shortcuts changed
+    private var homeAppsCheckNeeded = true
+    private var homeAppsCheckJob: Job? = null
 
     val showDialog = SingleLiveEvent<String>()
     val resetLauncherLiveData = SingleLiveEvent<Unit?>()
@@ -371,12 +389,90 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    /** Makes sure [appList] is loaded, with or without hidden apps. Reuses the cached list when it's current. */
     fun getAppList(includeHiddenApps: Boolean = false) {
-        viewModelScope.launch {
+        if (appListIncludesHidden == includeHiddenApps) {
+            if (appListJob?.isActive == true) return
+            if (!appListStale && appList.value != null && !appListLoadedAt.hasBeenHours(1)) return
+        }
+        loadAppList(includeHiddenApps)
+    }
+
+    /** Reloads [appList] now, e.g. after hiding or renaming an app. */
+    fun refreshAppList() {
+        appListStale = true
+        loadAppList(appListIncludesHidden)
+    }
+
+    /**
+     * Installed apps or shortcuts may have changed: reload the app list and re-check the home apps.
+     * Called when the launcher starts, and from LauncherApps callbacks. Those arrive in bursts
+     * while apps update, so callers pass a short [delayMs] to handle a burst once.
+     */
+    fun onAppsChanged(delayMs: Long = 0L) {
+        appListStale = true
+        homeAppsCheckNeeded = true
+        appsChangedJob?.cancel()
+        appsChangedJob = viewModelScope.launch {
+            delay(delayMs)
+            loadAppList(appListIncludesHidden)
+            checkHomeApps()
+        }
+    }
+
+    private fun loadAppList(includeHiddenApps: Boolean) {
+        appListJob?.cancel()
+        appListIncludesHidden = includeHiddenApps
+        appListJob = viewModelScope.launch {
             val apps = getAppsList(appContext, prefs, includeRegularApps = true, includeHiddenApps)
             appList.value = apps
+            appListStale = false
+            appListLoadedAt = System.currentTimeMillis()
         }
         getPrivateSpaceAppList()
+    }
+
+    /** Blanks home apps whose app or shortcut is gone, checking off the main thread. */
+    fun checkHomeApps() {
+        if (!homeAppsCheckNeeded) return
+        homeAppsCheckNeeded = false
+        // A newer check supersedes one still running
+        homeAppsCheckJob?.cancel()
+        homeAppsCheckJob = viewModelScope.launch {
+            val gone = withContext(Dispatchers.IO) {
+                (1..8).filter { isHomeAppGone(it) }.associateWith { prefs.getAppPackage(it) }
+            }
+            // Skip a slot if you picked a different app for it while the check was running
+            val cleared = gone.filter { (location, packageName) -> prefs.getAppPackage(location) == packageName }
+            if (cleared.isEmpty()) return@launch
+            cleared.keys.forEach { prefs.clearHomeApp(it) }
+            refreshHome(false)
+        }
+    }
+
+    private fun isHomeAppGone(location: Int): Boolean {
+        val packageName = prefs.getAppPackage(location)
+        // A name with no app behind it is blanked too, as upstream did
+        if (packageName.isEmpty()) return prefs.getAppName(location).isNotEmpty()
+        val userString = prefs.getAppUser(location)
+        return try {
+            if (prefs.getIsShortcut(location)) {
+                val launcherApps = appContext.getSystemService(Context.LAUNCHER_APPS_SERVICE) as LauncherApps
+                val query = LauncherApps.ShortcutQuery().apply {
+                    setPackage(packageName)
+                    setQueryFlags(LauncherApps.ShortcutQuery.FLAG_MATCH_PINNED)
+                }
+                val shortcutId = prefs.getShortcutId(location)
+                val shortcuts = launcherApps.getShortcuts(query, getUserHandleFromString(appContext, userString))
+                // null means the shortcuts can't be read right now, not that this one is gone
+                shortcuts != null && shortcuts.none { it.id == shortcutId }
+            } else
+                !isPackageInstalled(appContext, packageName, userString)
+        } catch (e: Exception) {
+            // Can't tell (e.g. not the default launcher right now): keep the app rather than lose it
+            e.printStackTrace()
+            false
+        }
     }
 
     fun getHiddenApps() {

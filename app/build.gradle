@@ -52,6 +52,8 @@ android {
             }
             debuggable false
             minifyEnabled true
+            // Lite: drop resources nothing uses any more (old icons, animations, layouts)
+            shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
         debug {

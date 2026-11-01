@@ -19,6 +19,11 @@ A personal fork of [Olauncher](https://github.com/tanujnotes/Olauncher) with eve
   - Long-pressing an app in the drawer opens a normal pop-up menu (Rename, Hide, App info, Uninstall). Rename opens a dialog, with a button to restore the original name.
   - Messages use standard Material dialogs.
 - The home screen and the app drawer keep Olauncher's own minimal text style.
+- **Faster returns home**:
+  - The app list is cached. Upstream reloaded and re-sorted every app each time you came back home, then again when you opened the drawer. Lite reloads when apps are installed, updated or removed, when a work profile or Private Space is switched on or off, when you hide or rename an app, and at most once an hour otherwise.
+  - Checking that home apps are still installed happens in the background, and only after apps change, instead of on the main thread every time you return home.
+  - Long press uses Android's own timing, which follows the "Touch & hold delay" accessibility setting. Upstream added half a second on top.
+  - Release builds drop resources nothing uses any more.
 
 Everything that makes it a launcher still works: home apps, swipe gestures and swipe apps, clock and date taps, the app drawer and its search, hidden apps, renaming, pinned shortcuts and Private Space.
 

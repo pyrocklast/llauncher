@@ -18,6 +18,7 @@ import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
@@ -97,25 +98,35 @@ class MainActivity : AppCompatActivity() {
         }
 
         initObservers(viewModel)
-        viewModel.getAppList()
+        // Lite: full refresh when the launcher starts; afterwards only when apps change
+        viewModel.onAppsChanged()
         registerShortcutCallback()
         setupOrientation()
 
         window.addFlags(FLAG_LAYOUT_NO_LIMITS)
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
-            profileReceiver = object : BroadcastReceiver() {
-                override fun onReceive(context: Context?, intent: Intent?) {
-                    viewModel.isPrivateSpaceToggling = false
-                    viewModel.getPrivateSpaceAppList()
-                }
+        // Lite: a profile turning on or off (work profile, or Private Space on Android 15+) changes
+        // which apps exist, so it refreshes the cached app list too. Upstream listened for Private
+        // Space only, and covered work profiles by reloading on every return home.
+        profileReceiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context?, intent: Intent?) {
+                viewModel.isPrivateSpaceToggling = false
+                viewModel.getPrivateSpaceAppList()
+                viewModel.onAppsChanged(Constants.APPS_CHANGED_DELAY_MS)
             }
-            val filter = IntentFilter().apply {
+        }
+        val filter = IntentFilter().apply {
+            addAction(Intent.ACTION_MANAGED_PROFILE_ADDED)
+            addAction(Intent.ACTION_MANAGED_PROFILE_REMOVED)
+            addAction(Intent.ACTION_MANAGED_PROFILE_AVAILABLE)
+            addAction(Intent.ACTION_MANAGED_PROFILE_UNAVAILABLE)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM) {
                 addAction(Intent.ACTION_PROFILE_AVAILABLE)
                 addAction(Intent.ACTION_PROFILE_UNAVAILABLE)
             }
-            registerReceiver(profileReceiver, filter)
         }
+        // Not exported: only the system (and this app) can deliver these
+        ContextCompat.registerReceiver(this, profileReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
     }
 
     override fun onStart() {
@@ -127,34 +138,34 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         isResumed = true
         viewModel.isPrivateSpaceToggling = false
-        viewModel.getAppList()
     }
 
     private fun registerShortcutCallback() {
         val launcherApps = getSystemService(LauncherApps::class.java)
+        // Lite: these callbacks are what keep the cached app list and home apps up to date
         launcherAppsCallback = object : LauncherApps.Callback() {
-            override fun onPackageRemoved(packageName: String, user: android.os.UserHandle) = Unit
-            override fun onPackageAdded(packageName: String, user: android.os.UserHandle) = Unit
-            override fun onPackageChanged(packageName: String, user: android.os.UserHandle) = Unit
+            override fun onPackageRemoved(packageName: String, user: android.os.UserHandle) = appsChanged()
+            override fun onPackageAdded(packageName: String, user: android.os.UserHandle) = appsChanged()
+            override fun onPackageChanged(packageName: String, user: android.os.UserHandle) = appsChanged()
             override fun onPackagesAvailable(
                 packageNames: Array<out String>,
                 user: android.os.UserHandle,
                 replacing: Boolean,
-            ) = Unit
+            ) = appsChanged()
 
             override fun onPackagesUnavailable(
                 packageNames: Array<out String>,
                 user: android.os.UserHandle,
                 replacing: Boolean,
-            ) = Unit
+            ) = appsChanged()
 
             override fun onShortcutsChanged(
                 packageName: String,
                 shortcuts: MutableList<ShortcutInfo>,
                 user: android.os.UserHandle,
-            ) {
-                viewModel.getAppList()
-            }
+            ) = appsChanged()
+
+            private fun appsChanged() = viewModel.onAppsChanged(Constants.APPS_CHANGED_DELAY_MS)
         }
         launcherApps.registerCallback(launcherAppsCallback!!)
     }

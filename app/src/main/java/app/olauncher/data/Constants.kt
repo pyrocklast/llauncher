@@ -60,7 +60,8 @@ object Constants {
 
     const val REQUEST_CODE_LAUNCHER_SELECTOR = 678
 
-    const val LONG_PRESS_DELAY_MS = 500L
+    // Lite: app installs and updates send bursts of change callbacks; handle each burst once
+    const val APPS_CHANGED_DELAY_MS = 500L
     const val ONE_DAY_IN_MILLIS = 86400000L
     const val ONE_HOUR_IN_MILLIS = 3600000L
     const val ONE_MINUTE_IN_MILLIS = 60000L

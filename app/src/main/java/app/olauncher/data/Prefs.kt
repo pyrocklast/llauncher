@@ -532,6 +532,20 @@ class Prefs(context: Context) {
         }
     }
 
+    // Lite: blank a home app slot whose app or shortcut is gone (same fields upstream cleared)
+    fun clearHomeApp(location: Int) {
+        when (location) {
+            1 -> { appName1 = ""; appPackage1 = "" }
+            2 -> { appName2 = ""; appPackage2 = "" }
+            3 -> { appName3 = ""; appPackage3 = "" }
+            4 -> { appName4 = ""; appPackage4 = "" }
+            5 -> { appName5 = ""; appPackage5 = "" }
+            6 -> { appName6 = ""; appPackage6 = "" }
+            7 -> { appName7 = ""; appPackage7 = "" }
+            8 -> { appName8 = ""; appPackage8 = "" }
+        }
+    }
+
     fun setAppActivityClassName(location: Int, activityClassName: String) {
         when (location) {
             1 -> appActivityClassName1 = activityClassName

@@ -1,7 +1,6 @@
 package app.olauncher.ui
 
 import android.content.Context
-import android.content.pm.LauncherApps
 import android.os.BatteryManager
 import android.os.Build
 import android.os.Bundle
@@ -10,7 +9,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowInsets
-import android.widget.TextView
 import androidx.core.os.bundleOf
 import androidx.core.view.isVisible
 import androidx.lifecycle.Observer
@@ -24,7 +22,6 @@ import app.olauncher.data.Prefs
 import app.olauncher.databinding.FragmentHomeBinding
 import app.olauncher.helper.expandNotificationDrawer
 import app.olauncher.helper.getUserHandleFromString
-import app.olauncher.helper.isPackageInstalled
 import app.olauncher.helper.openAlarmApp
 import app.olauncher.helper.openCalendar
 import app.olauncher.helper.openCameraApp
@@ -252,113 +249,21 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
         binding.date.text = dateText.replace(".,", ",")
     }
 
+    // Lite: names come straight from prefs, so returning home makes no system calls on the main thread.
+    // The view model checks that the apps still exist, in the background and only after apps changed.
     private fun populateHomeScreen(appCountUpdated: Boolean) {
         if (appCountUpdated) hideHomeApps()
         populateDateTime()
 
-        val homeAppsNum = prefs.homeAppsNum
-        if (homeAppsNum == 0) return
-
-        binding.homeApp1.visibility = View.VISIBLE
-        if (!setHomeAppText(binding.homeApp1, prefs.appName1, prefs.appPackage1, prefs.appUser1, prefs.isShortcut1, prefs.shortcutId1)) {
-            prefs.appName1 = ""
-            prefs.appPackage1 = ""
+        val homeApps = listOf(
+            binding.homeApp1, binding.homeApp2, binding.homeApp3, binding.homeApp4,
+            binding.homeApp5, binding.homeApp6, binding.homeApp7, binding.homeApp8,
+        )
+        for (location in 1..prefs.homeAppsNum.coerceAtMost(homeApps.size)) {
+            homeApps[location - 1].visibility = View.VISIBLE
+            homeApps[location - 1].text = prefs.getAppName(location)
         }
-        if (homeAppsNum == 1) return
-
-        binding.homeApp2.visibility = View.VISIBLE
-        if (!setHomeAppText(binding.homeApp2, prefs.appName2, prefs.appPackage2, prefs.appUser2, prefs.isShortcut2, prefs.shortcutId2)) {
-            prefs.appName2 = ""
-            prefs.appPackage2 = ""
-        }
-        if (homeAppsNum == 2) return
-
-        binding.homeApp3.visibility = View.VISIBLE
-        if (!setHomeAppText(binding.homeApp3, prefs.appName3, prefs.appPackage3, prefs.appUser3, prefs.isShortcut3, prefs.shortcutId3)) {
-            prefs.appName3 = ""
-            prefs.appPackage3 = ""
-        }
-        if (homeAppsNum == 3) return
-
-        binding.homeApp4.visibility = View.VISIBLE
-        if (!setHomeAppText(binding.homeApp4, prefs.appName4, prefs.appPackage4, prefs.appUser4, prefs.isShortcut4, prefs.shortcutId4)) {
-            prefs.appName4 = ""
-            prefs.appPackage4 = ""
-        }
-        if (homeAppsNum == 4) return
-
-        binding.homeApp5.visibility = View.VISIBLE
-        if (!setHomeAppText(binding.homeApp5, prefs.appName5, prefs.appPackage5, prefs.appUser5, prefs.isShortcut5, prefs.shortcutId5)) {
-            prefs.appName5 = ""
-            prefs.appPackage5 = ""
-        }
-        if (homeAppsNum == 5) return
-
-        binding.homeApp6.visibility = View.VISIBLE
-        if (!setHomeAppText(binding.homeApp6, prefs.appName6, prefs.appPackage6, prefs.appUser6, prefs.isShortcut6, prefs.shortcutId6)) {
-            prefs.appName6 = ""
-            prefs.appPackage6 = ""
-        }
-        if (homeAppsNum == 6) return
-
-        binding.homeApp7.visibility = View.VISIBLE
-        if (!setHomeAppText(binding.homeApp7, prefs.appName7, prefs.appPackage7, prefs.appUser7, prefs.isShortcut7, prefs.shortcutId7)) {
-            prefs.appName7 = ""
-            prefs.appPackage7 = ""
-        }
-        if (homeAppsNum == 7) return
-
-        binding.homeApp8.visibility = View.VISIBLE
-        if (!setHomeAppText(binding.homeApp8, prefs.appName8, prefs.appPackage8, prefs.appUser8, prefs.isShortcut8, prefs.shortcutId8)) {
-            prefs.appName8 = ""
-            prefs.appPackage8 = ""
-        }
-    }
-
-    private fun setHomeAppText(
-        textView: TextView,
-        appName: String,
-        packageName: String,
-        userString: String,
-        isShortcut: Boolean,
-        shortcutId: String?,
-    ): Boolean {
-        // Get user handle for the app/shortcut
-        val userHandle = getUserHandleFromString(requireContext(), userString)
-
-        // If it's a shortcut, verify it still exists
-        if (isShortcut) {
-            val launcherApps = requireContext().getSystemService(Context.LAUNCHER_APPS_SERVICE) as LauncherApps
-
-            // Query for the specific shortcut
-            val query = LauncherApps.ShortcutQuery().apply {
-                setPackage(packageName)
-                setQueryFlags(LauncherApps.ShortcutQuery.FLAG_MATCH_PINNED)
-            }
-
-            try {
-                val shortcuts = launcherApps.getShortcuts(query, userHandle)
-                // Check if our shortcut still exists
-                if (shortcuts?.any { it.id == shortcutId } == true) {
-                    textView.text = appName
-                    return true
-                }
-                textView.text = ""
-                return false
-            } catch (e: Exception) {
-                e.printStackTrace()
-                textView.text = ""
-                return false
-            }
-        }
-
-        // Regular app check
-        if (isPackageInstalled(requireContext(), packageName, userString)) {
-            textView.text = appName
-            return true
-        }
-        textView.text = ""
-        return false
+        viewModel.checkHomeApps()
     }
 
     private fun hideHomeApps() {

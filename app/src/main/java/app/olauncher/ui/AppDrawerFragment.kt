@@ -330,7 +330,7 @@ class AppDrawerFragment : BaseFragment() {
             is AppModel.App -> prefs.setAppRenameLabel(appModel.appPackage, renameLabel)
             else -> return
         }
-        viewModel.getAppList()
+        viewModel.refreshAppList()
     }
 
     private fun toggleHidden(appModel: AppModel) {
@@ -359,7 +359,7 @@ class AppDrawerFragment : BaseFragment() {
             viewModel.showDialog.postValue(Constants.Dialog.HIDDEN)
             findNavController().navigate(R.id.action_appListFragment_to_settingsFragment2)
         }
-        viewModel.getAppList()
+        viewModel.refreshAppList()
         viewModel.getHiddenApps()
     }
 
@@ -391,7 +391,7 @@ class AppDrawerFragment : BaseFragment() {
                 }
             }
         }
-        viewModel.getAppList()
+        // The app list refreshes from the LauncherApps callbacks once the removal goes through
     }
 
     private fun getOriginalAppName(appModel: AppModel.App): String {
