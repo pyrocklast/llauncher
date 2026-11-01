@@ -8,11 +8,21 @@ A personal fork of [Olauncher](https://github.com/tanujnotes/Olauncher) with eve
 - **Plain wallpaper on theme change**: switching theme no longer offers to change your wallpaper. Set your wallpaper in Android's own settings.
 - **Screen time**: the usage counter on the home screen, its settings row and the usage-access prompt.
 - **Promotions and nags**: rate, review and share prompts, the Olauncher Pro dialog, the "More features" and "About" rows, the footer links (privacy, share, rate, GitHub, X) and the footer ads for the developer's other apps, the New Year messages, the welcome dialog and the "keep the keyboard on" nudge.
+- **Double tap to lock**: the accessibility service and device-admin receiver it relied on are gone too. Lock with the power button.
+- **Web search from the drawer**: typing `!something` no longer opens DuckDuckGo, and a search with no matching app no longer opens a web search. Enter launches the first match.
 - **Permissions**: `INTERNET`, `SET_WALLPAPER` and `PACKAGE_USAGE_STATS`. The launcher can't go online, change your wallpaper or read app usage.
 
-Everything that makes it a launcher is unchanged: home apps, gestures, swipe apps, clock and date taps, the app drawer, hidden apps, renaming, pinned shortcuts, Private Space and double tap to lock.
+## What's changed
 
-Two things still open other apps, and only when you ask: the "Not working?" help link for double tap to lock, and typing `!something` in the drawer, which hands the search to your browser.
+- **Native look for menus, dialogs and settings**: the app uses Android's Material 3 theme, with Material You colours from your wallpaper on Android 12 and later.
+  - Settings is a standard Android settings screen, with sections, switches and choice dialogs. Hidden apps and app drawer alignment have their own rows, and the theme choice includes System, instead of hidden taps and long presses.
+  - Long-pressing an app in the drawer opens a normal pop-up menu (Rename, Hide, App info, Uninstall). Rename opens a dialog, with a button to restore the original name.
+  - Messages use standard Material dialogs.
+- The home screen and the app drawer keep Olauncher's own minimal text style.
+
+Everything that makes it a launcher still works: home apps, swipe gestures and swipe apps, clock and date taps, the app drawer and its search, hidden apps, renaming, pinned shortcuts and Private Space.
+
+New text this fork adds lives in `strings_lite.xml`, in English and French. Other languages show those few lines in English.
 
 ## Building on Fedora
 
@@ -94,7 +104,7 @@ git merge upstream/master
 ./gradlew assembleRelease
 ```
 
-Conflicts can only appear in files this fork changed. `git diff upstream/master --stat` lists them. The version code follows upstream, so the new APK installs over the old one.
+Conflicts can only appear in files this fork changed. `git diff upstream/master --stat` lists them. Settings is a full rewrite, so if upstream adds a new setting you'd add it to `SettingsFragment.kt` by hand rather than merging it. The version code follows upstream, so the new APK installs over the old one.
 
 ## Changing the name or package
 

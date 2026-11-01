@@ -1,7 +1,6 @@
 package app.olauncher.helper
 
 import android.app.Activity
-import android.app.SearchManager
 import android.app.role.RoleManager
 import android.content.ComponentName
 import android.content.Context
@@ -97,12 +96,6 @@ fun Context.resetLauncherViaFakeActivity() {
     resetDefaultLauncher()
     if (getDefaultLauncherPackage(this).contains("."))
         startActivity(Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS))
-}
-
-fun Context.openSearch(query: String? = null) {
-    val intent = Intent(Intent.ACTION_WEB_SEARCH)
-    intent.putExtra(SearchManager.QUERY, query ?: "")
-    startActivity(intent)
 }
 
 private var isEinkDevice: Boolean? = null

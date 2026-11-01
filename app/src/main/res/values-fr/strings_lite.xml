@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="lite_app_info">Infos sur l\'appli</string>
+    <string name="lite_align_bottom">Aligner les applis en bas</string>
+    <string name="lite_drawer_alignment">Alignement du tiroir d\'applis</string>
+    <string name="lite_swipe_left">Balayer vers la gauche</string>
+    <string name="lite_swipe_right">Balayer vers la droite</string>
+    <string name="lite_original_name">Nom d\'origine</string>
+</resources>

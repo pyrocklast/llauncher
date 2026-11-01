@@ -1,38 +1,27 @@
 package app.olauncher.ui
 
-import android.content.Context
-import android.content.pm.LauncherApps
 import android.os.UserHandle
-import android.text.Editable
-import android.text.TextWatcher
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.view.inputmethod.EditorInfo
 import android.widget.Filter
 import android.widget.Filterable
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
-import app.olauncher.R
 import app.olauncher.data.AppModel
 import app.olauncher.data.Constants
 import app.olauncher.databinding.AdapterAppDrawerBinding
 import app.olauncher.databinding.AdapterPrivateSpaceHeaderBinding
-import app.olauncher.helper.hideKeyboard
-import app.olauncher.helper.isSystemApp
-import app.olauncher.helper.showKeyboard
 import java.text.Normalizer
 
 class AppDrawerAdapter(
     private var flag: Int,
     private val appLabelGravity: Int,
     private val appClickListener: (AppModel) -> Unit,
-    private val appInfoListener: (AppModel) -> Unit,
-    private val appDeleteListener: (AppModel) -> Unit,
-    private val appHideListener: (AppModel, Int) -> Unit,
-    private val appRenameListener: (AppModel, String) -> Unit,
+    // Lite: long press opens a stock popup menu, built by the fragment and anchored to the row
+    private val appMenuListener: (AppModel, View) -> Unit,
     private val privateSpaceToggleListener: () -> Unit = {},
     private val privateSpaceSettingsListener: () -> Unit = {},
 ) : ListAdapter<AppModel, RecyclerView.ViewHolder>(DIFF_CALLBACK), Filterable {
@@ -60,7 +49,6 @@ class AppDrawerAdapter(
     }
 
     private var autoLaunch = true
-    private var isBangSearch = false
     private var autoLaunchedQuery: String? = null
     var allowAutoLaunch = true
     private val diacriticsRegex = Regex("\\p{InCombiningDiacriticalMarks}+")
@@ -117,10 +105,7 @@ class AppDrawerAdapter(
                     myUserHandle,
                     appModel,
                     appClickListener,
-                    appDeleteListener,
-                    appInfoListener,
-                    appHideListener,
-                    appRenameListener
+                    appMenuListener,
                 )
             }
         } catch (e: Exception) {
@@ -133,7 +118,6 @@ class AppDrawerAdapter(
     private fun createAppFilter(): Filter {
         return object : Filter() {
             override fun performFiltering(charSearch: CharSequence?): FilterResults {
-                isBangSearch = charSearch?.startsWith("!") ?: false
                 autoLaunch = allowAutoLaunch && (charSearch?.startsWith(" ")?.not() ?: true)
 
                 val appFilteredList = (if (charSearch.isNullOrBlank()) appsList
@@ -166,7 +150,6 @@ class AppDrawerAdapter(
         try {
             if (itemCount == 1
                 && autoLaunch
-                && isBangSearch.not()
                 && flag == Constants.FLAG_LAUNCH_APP
                 && appFilteredList.isNotEmpty()
                 && appFilteredList[0] !is AppModel.PrivateSpaceHeader
@@ -238,15 +221,8 @@ class AppDrawerAdapter(
             myUserHandle: UserHandle,
             appModel: AppModel,
             clickListener: (AppModel) -> Unit,
-            appDeleteListener: (AppModel) -> Unit,
-            appInfoListener: (AppModel) -> Unit,
-            appHideListener: (AppModel, Int) -> Unit,
-            appRenameListener: (AppModel, String) -> Unit,
+            menuListener: (AppModel, View) -> Unit,
         ) = with(binding) {
-            appHideLayout.visibility = View.GONE
-            renameLayout.visibility = View.GONE
-            appTitle.visibility = View.VISIBLE
-
             // Show indicators in title based on app type and state
             appTitle.text = buildString {
                 append(appModel.appLabel)
@@ -256,119 +232,9 @@ class AppDrawerAdapter(
             otherProfileIndicator.isVisible = appModel.user != myUserHandle
 
             appTitle.setOnClickListener { clickListener(appModel) }
-
             appTitle.setOnLongClickListener {
-                if (appModel.appPackage.isNotEmpty()) {
-                    appDelete.alpha = when (
-                        appModel is AppModel.PinnedShortcut || !root.context.isSystemApp(appModel.appPackage, appModel.user)
-                    ) {
-                        true -> 1.0f
-                        false -> 0.5f
-                    }
-                    appDelete.text = if (appModel is AppModel.PinnedShortcut)
-                        root.context.getString(R.string.remove)
-                    else
-                        root.context.getString(R.string.delete)
-                    appHide.text = if (flag == Constants.FLAG_HIDDEN_APPS)
-                        root.context.getString(R.string.adapter_show)
-                    else
-                        root.context.getString(R.string.adapter_hide)
-                    appTitle.visibility = View.INVISIBLE
-                    appHide.alpha = when (appModel is AppModel.PinnedShortcut) {
-                        true -> 0.5f
-                        false -> 1.0f
-                    }
-                    appHideLayout.visibility = View.VISIBLE
-                    // Only allow renaming non hidden apps
-                    appRename.isVisible = flag != Constants.FLAG_HIDDEN_APPS
-                }
+                if (appModel.appPackage.isNotEmpty()) menuListener(appModel, appTitle)
                 true
-            }
-
-            // Configure rename behavior
-            appRename.setOnClickListener {
-                if (appModel.appPackage.isNotEmpty()) {
-                    etAppRename.hint = getAppName(etAppRename.context, appModel.appPackage, appModel.user)
-                    etAppRename.setText(appModel.appLabel)
-                    etAppRename.setSelectAllOnFocus(true)
-                    renameLayout.visibility = View.VISIBLE
-                    appHideLayout.visibility = View.GONE
-                    etAppRename.showKeyboard()
-                    etAppRename.imeOptions = EditorInfo.IME_ACTION_DONE
-                }
-            }
-            etAppRename.onFocusChangeListener = View.OnFocusChangeListener { _, hasFocus ->
-                appTitle.visibility = if (hasFocus) View.INVISIBLE else View.VISIBLE
-            }
-            etAppRename.addTextChangedListener(object : TextWatcher {
-                override fun afterTextChanged(s: Editable?) {
-                    etAppRename.hint = getAppName(etAppRename.context, appModel.appPackage, appModel.user)
-                }
-
-                override fun beforeTextChanged(
-                    s: CharSequence?,
-                    start: Int,
-                    count: Int,
-                    after: Int,
-                ) {
-                }
-
-                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                    etAppRename.hint = ""
-                }
-            })
-            etAppRename.setOnEditorActionListener { _, actionCode, _ ->
-                if (actionCode == EditorInfo.IME_ACTION_DONE) {
-                    val renameLabel = etAppRename.text.toString().trim()
-                    if (renameLabel.isNotBlank() && appModel.appPackage.isNotBlank()) {
-                        appRenameListener(appModel, renameLabel)
-                        renameLayout.visibility = View.GONE
-                    }
-                    true
-                }
-                false
-            }
-            tvSaveRename.setOnClickListener {
-                etAppRename.hideKeyboard()
-                val renameLabel = etAppRename.text.toString().trim()
-                if (renameLabel.isNotBlank() && appModel.appPackage.isNotBlank()) {
-                    appRenameListener(appModel, renameLabel)
-                    renameLayout.visibility = View.GONE
-                } else {
-                    appRenameListener(
-                        appModel,
-                        getAppName(etAppRename.context, appModel.appPackage, appModel.user)
-                    )
-                    renameLayout.visibility = View.GONE
-                }
-            }
-            appInfo.setOnClickListener { appInfoListener(appModel) }
-            appDelete.setOnClickListener { appDeleteListener(appModel) }
-            appMenuClose.setOnClickListener {
-                appHideLayout.visibility = View.GONE
-                appTitle.visibility = View.VISIBLE
-            }
-            appRenameClose.setOnClickListener {
-                renameLayout.visibility = View.GONE
-                appTitle.visibility = View.VISIBLE
-            }
-            appHide.setOnClickListener { appHideListener(appModel, bindingAdapterPosition) }
-        }
-
-        private fun getAppName(context: Context, appPackage: String, user: UserHandle): String {
-            val launcherApps = context.getSystemService(Context.LAUNCHER_APPS_SERVICE) as LauncherApps
-            return try {
-                val activityList = launcherApps.getActivityList(appPackage, user)
-                if (activityList.isNotEmpty()) {
-                    activityList.first().label.toString()
-                } else {
-                    val packageManager = context.packageManager
-                    packageManager.getApplicationLabel(
-                        packageManager.getApplicationInfo(appPackage, 0)
-                    ).toString()
-                }
-            } catch (_: Exception) {
-                "" // As a fallback, display an empty string.
             }
         }
     }

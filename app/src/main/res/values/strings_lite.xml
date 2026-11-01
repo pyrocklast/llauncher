@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lite: strings added by this fork. Kept apart from upstream's strings.xml so merges stay clean.
+     Only English and French are provided; other languages fall back to English. -->
+<resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
+    <string name="lite_app_info">App info</string>
+    <string name="lite_align_bottom">Align apps to the bottom</string>
+    <string name="lite_drawer_alignment">App drawer alignment</string>
+    <string name="lite_swipe_left">Swipe left</string>
+    <string name="lite_swipe_right">Swipe right</string>
+    <string name="lite_original_name">Original name</string>
+</resources>

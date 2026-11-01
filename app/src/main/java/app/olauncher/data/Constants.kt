@@ -58,7 +58,6 @@ object Constants {
     const val FLAG_SET_CLOCK_APP = 13
     const val FLAG_SET_CALENDAR_APP = 14
 
-    const val REQUEST_CODE_ENABLE_ADMIN = 666
     const val REQUEST_CODE_LAUNCHER_SELECTOR = 678
 
     const val LONG_PRESS_DELAY_MS = 500L
@@ -68,8 +67,4 @@ object Constants {
 
     const val MIN_ANIM_REFRESH_RATE = 30f
 
-    // Help page for double tap to lock, opened only from its "Not working?" button
-    const val URL_DOUBLE_TAP = "https://tanujnotes.notion.site/Double-tap-to-lock-Olauncher-0f7fb103ec1f47d7a90cdfdcd7fb86ef"
-    // Typing "!something" in the app drawer hands the search to your browser
-    const val URL_DUCK_SEARCH = "https://duck.co/?q="
 }

@@ -44,8 +44,7 @@
     <fragment
         android:id="@+id/settingsFragment"
         android:name="app.olauncher.ui.SettingsFragment"
-        android:label="SettingsFragment"
-        android:layout="@layout/fragment_settings">
+        android:label="SettingsFragment">
         <action
             android:id="@+id/action_settingsFragment_to_appListFragment"
             app:destination="@id/appListFragment"

@@ -15,6 +15,7 @@ import android.os.Bundle
 import android.provider.Settings
 import android.view.WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
 import androidx.activity.OnBackPressedCallback
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.lifecycle.ViewModelProvider
@@ -28,13 +29,14 @@ import app.olauncher.helper.getColorFromAttr
 import app.olauncher.helper.hasBeenHours
 import app.olauncher.helper.hasBeenMinutes
 import app.olauncher.helper.isDefaultLauncher
-import app.olauncher.helper.OlDialog
 import app.olauncher.helper.isEinkDisplay
 import app.olauncher.helper.isSystemAnimationsDisabled
 import app.olauncher.helper.isTablet
 import app.olauncher.helper.resetLauncherViaFakeActivity
 import app.olauncher.helper.showLauncherSelector
-import app.olauncher.helper.showMessageDialog
+import app.olauncher.helper.showRespectingStatusBar
+import com.google.android.material.color.DynamicColors
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -49,7 +51,7 @@ class MainActivity : AppCompatActivity() {
     private var isResumed = false
     private var profileReceiver: BroadcastReceiver? = null
     private var launcherAppsCallback: LauncherApps.Callback? = null
-    private var messageDialog: OlDialog? = null
+    private var messageDialog: AlertDialog? = null
 
 //    override fun onBackPressed() {
 //        if (navController.currentDestination?.id != R.id.mainFragment)
@@ -68,6 +70,8 @@ class MainActivity : AppCompatActivity() {
         if (isEinkDisplay()) prefs.appTheme = AppCompatDelegate.MODE_NIGHT_NO
         AppCompatDelegate.setDefaultNightMode(prefs.appTheme)
         super.onCreate(savedInstanceState)
+        // Lite: Material You colours for menus, dialogs and settings on Android 12+
+        DynamicColors.applyToActivityIfAvailable(this)
         if (prefs.boldFont) theme.applyStyle(R.style.BoldFontOverlay, true)
         if (isEinkDisplay() || isSystemAnimationsDisabled()) theme.applyStyle(R.style.NoAnimationOverlay, true)
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -202,7 +206,12 @@ class MainActivity : AppCompatActivity() {
 
     private fun showMessage(title: Int, message: Int, action: Int, clickListener: () -> Unit) {
         messageDialog?.dismiss()
-        messageDialog = showMessageDialog(title, message, action, clickListener)
+        messageDialog = MaterialAlertDialogBuilder(this)
+            .setTitle(title)
+            .setMessage(message)
+            .setPositiveButton(action) { _, _ -> clickListener() }
+            .create()
+            .showRespectingStatusBar()
     }
 
     @SuppressLint("SourceLockedOrientationActivity")
@@ -268,11 +277,6 @@ class MainActivity : AppCompatActivity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         when (requestCode) {
-            Constants.REQUEST_CODE_ENABLE_ADMIN -> {
-                if (resultCode == Activity.RESULT_OK)
-                    prefs.lockModeOn = true
-            }
-
             Constants.REQUEST_CODE_LAUNCHER_SELECTOR -> {
                 if (resultCode == Activity.RESULT_OK)
                     resetLauncherViaFakeActivity()

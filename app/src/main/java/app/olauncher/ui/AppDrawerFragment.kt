@@ -1,17 +1,23 @@
 package app.olauncher.ui
 
 import android.content.Context
+import android.content.DialogInterface
+import android.content.pm.LauncherApps
 import android.os.Build
 import android.os.Bundle
 import android.os.Process
 import android.text.Spannable
+import android.view.Gravity
 import android.view.LayoutInflater
+import android.view.Menu
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.AnimationUtils
 import android.view.inputmethod.BaseInputConnection
+import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.widget.TextView
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.SearchView
 import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.findNavController
@@ -23,6 +29,7 @@ import app.olauncher.R
 import app.olauncher.data.AppModel
 import app.olauncher.data.Constants
 import app.olauncher.data.Prefs
+import app.olauncher.databinding.DialogRenameBinding
 import app.olauncher.databinding.FragmentAppDrawerBinding
 import app.olauncher.helper.deletePinnedShortcut
 import app.olauncher.helper.hideKeyboard
@@ -30,11 +37,11 @@ import app.olauncher.helper.isEinkDisplay
 import app.olauncher.helper.isSystemAnimationsDisabled
 import app.olauncher.helper.isSystemApp
 import app.olauncher.helper.openAppInfo
-import app.olauncher.helper.openSearch
-import app.olauncher.helper.openUrl
 import app.olauncher.helper.showKeyboard
+import app.olauncher.helper.showPopupMenu
 import app.olauncher.helper.showToast
 import app.olauncher.helper.uninstall
+import com.google.android.material.dialog.MaterialAlertDialogBuilder
 
 class AppDrawerFragment : BaseFragment() {
 
@@ -52,6 +59,7 @@ class AppDrawerFragment : BaseFragment() {
     private var currentPrivateSpaceAvailable: Boolean = false
 
     private val viewModel: MainViewModel by activityViewModels()
+    private var dialog: AlertDialog? = null
     private var _binding: FragmentAppDrawerBinding? = null
     private val binding get() = _binding!!
 
@@ -94,13 +102,9 @@ class AppDrawerFragment : BaseFragment() {
 
     private fun initSearch() {
         binding.search.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+            // Lite: no web search. Enter launches the first match, or does nothing
             override fun onQueryTextSubmit(query: String?): Boolean {
-                if (query?.startsWith("!") == true)
-                    requireContext().openUrl(Constants.URL_DUCK_SEARCH + query.replace(" ", "%20"))
-                else if (adapter.itemCount == 0)
-                    requireContext().openSearch(query?.trim())
-                else
-                    adapter.launchFirstInList()
+                adapter.launchFirstInList()
                 return true
             }
 
@@ -157,76 +161,7 @@ class AppDrawerFragment : BaseFragment() {
                 else
                     closeDrawer()
             },
-            appInfoListener = {
-                openAppInfo(
-                    requireContext(),
-                    it.user,
-                    it.appPackage
-                )
-                findNavController().popBackStack(R.id.mainFragment, false)
-            },
-            appDeleteListener = { appModel ->
-                when (appModel) {
-                    is AppModel.PrivateSpaceHeader -> {}
-                    is AppModel.PinnedShortcut ->
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1) {
-                            requireContext().deletePinnedShortcut(
-                                packageName = appModel.appPackage,
-                                shortcutIdToDelete = appModel.shortcutId,
-                                user = appModel.user,
-                            )
-                        }
-
-                    is AppModel.App -> {
-                        if (appModel.user != Process.myUserHandle()) {
-                            openAppInfo(requireContext(), appModel.user, appModel.appPackage)
-                        } else if (requireContext().isSystemApp(appModel.appPackage, appModel.user)) {
-                            requireContext().showToast(getString(R.string.system_app_cannot_delete))
-                            openAppInfo(requireContext(), appModel.user, appModel.appPackage)
-                        } else {
-                            requireContext().uninstall(appModel.appPackage)
-                        }
-                    }
-                }
-                viewModel.getAppList()
-            },
-            appHideListener = { appModel, position ->
-                if (appModel is AppModel.PinnedShortcut) {
-                    requireContext().showToast("Hiding pinned shortcuts is not supported")
-                    return@AppDrawerAdapter
-                }
-                adapter.appFilteredList.removeAt(position)
-                adapter.notifyItemRemoved(position)
-                adapter.appsList.remove(appModel)
-
-                val newSet = mutableSetOf<String>()
-                newSet.addAll(prefs.hiddenApps)
-                if (flag == Constants.FLAG_HIDDEN_APPS)
-                    newSet.remove(appModel.appPackage + "|" + appModel.user.toString())
-                else
-                    newSet.add(appModel.appPackage + "|" + appModel.user.toString())
-
-                prefs.hiddenApps = newSet
-                if (newSet.isEmpty())
-                    closeDrawer()
-                if (prefs.firstHide) {
-                    binding.search.hideKeyboard()
-                    prefs.firstHide = false
-                    viewModel.showDialog.postValue(Constants.Dialog.HIDDEN)
-                    findNavController().navigate(R.id.action_appListFragment_to_settingsFragment2)
-                }
-                viewModel.getAppList()
-                viewModel.getHiddenApps()
-            },
-            appRenameListener = { appModel, renameLabel ->
-                val identifier = when (appModel) {
-                    is AppModel.PinnedShortcut -> appModel.identity
-                    is AppModel.App -> appModel.appPackage
-                    else -> return@AppDrawerAdapter
-                }
-                prefs.setAppRenameLabel(identifier, renameLabel)
-                viewModel.getAppList()
-            },
+            appMenuListener = { appModel, anchor -> showAppMenu(appModel, anchor) },
             privateSpaceToggleListener = {
                 viewModel.togglePrivateSpaceLock()
             },
@@ -330,6 +265,144 @@ class AppDrawerFragment : BaseFragment() {
         }
     }
 
+    // Lite: long-press menu for an app or shortcut in the drawer
+
+    private fun showAppMenu(appModel: AppModel, anchor: View) {
+        if (appModel is AppModel.PrivateSpaceHeader) return
+        val isShortcut = appModel is AppModel.PinnedShortcut
+        val isHiddenList = flag == Constants.FLAG_HIDDEN_APPS
+        anchor.showPopupMenu(
+            gravity = if (prefs.appLabelAlignment == Gravity.END) Gravity.END else Gravity.START,
+            configure = { menu ->
+                if (!isHiddenList) menu.add(Menu.NONE, MENU_RENAME, 0, R.string.rename)
+                if (!isShortcut)
+                    menu.add(Menu.NONE, MENU_HIDE, 1, if (isHiddenList) R.string.adapter_show else R.string.adapter_hide)
+                menu.add(Menu.NONE, MENU_INFO, 2, R.string.lite_app_info)
+                menu.add(Menu.NONE, MENU_DELETE, 3, if (isShortcut) R.string.remove else R.string.delete)
+            }
+        ) { item ->
+            when (item.itemId) {
+                MENU_RENAME -> showRenameDialog(appModel)
+                MENU_HIDE -> toggleHidden(appModel)
+                MENU_INFO -> openInfo(appModel)
+                MENU_DELETE -> deleteApp(appModel)
+            }
+        }
+    }
+
+    private fun showRenameDialog(appModel: AppModel) {
+        val renameBinding = DialogRenameBinding.inflate(layoutInflater)
+        if (appModel is AppModel.App)
+            renameBinding.renameInputLayout.hint = getOriginalAppName(appModel)
+        renameBinding.renameInput.setText(appModel.appLabel)
+        renameBinding.renameInput.setSelectAllOnFocus(true)
+
+        dialog?.dismiss()
+        val renameDialog = MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.rename)
+            .setView(renameBinding.root)
+            // An empty name restores the original one
+            .setPositiveButton(R.string.rename) { _, _ ->
+                renameApp(appModel, renameBinding.renameInput.text?.toString()?.trim().orEmpty())
+            }
+            .setNeutralButton(R.string.lite_original_name) { _, _ -> renameApp(appModel, "") }
+            .setNegativeButton(android.R.string.cancel, null)
+            .create()
+        renameBinding.renameInput.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId != EditorInfo.IME_ACTION_DONE) return@setOnEditorActionListener false
+            renameDialog.getButton(DialogInterface.BUTTON_POSITIVE)?.performClick()
+            true
+        }
+        // Plain show() here, so the dialog takes focus and the keyboard opens for typing
+        renameDialog.show()
+        renameBinding.renameInput.showKeyboard()
+        dialog = renameDialog
+    }
+
+    private fun renameApp(appModel: AppModel, renameLabel: String) {
+        when (appModel) {
+            is AppModel.PinnedShortcut -> {
+                prefs.setAppRenameLabel(appModel.identity, renameLabel)
+                // Older versions saved shortcut names under the bare shortcut id
+                if (renameLabel.isEmpty()) prefs.setAppRenameLabel(appModel.shortcutId, "")
+            }
+
+            is AppModel.App -> prefs.setAppRenameLabel(appModel.appPackage, renameLabel)
+            else -> return
+        }
+        viewModel.getAppList()
+    }
+
+    private fun toggleHidden(appModel: AppModel) {
+        if (appModel !is AppModel.App) return
+        // Look the row up now: the list may have refreshed since the menu opened
+        val position = adapter.appFilteredList.indexOf(appModel)
+        if (position >= 0) {
+            adapter.appFilteredList.removeAt(position)
+            adapter.notifyItemRemoved(position)
+        }
+        adapter.appsList.remove(appModel)
+
+        val newSet = mutableSetOf<String>()
+        newSet.addAll(prefs.hiddenApps)
+        if (flag == Constants.FLAG_HIDDEN_APPS)
+            newSet.remove(appModel.appPackage + "|" + appModel.user.toString())
+        else
+            newSet.add(appModel.appPackage + "|" + appModel.user.toString())
+
+        prefs.hiddenApps = newSet
+        if (newSet.isEmpty())
+            closeDrawer()
+        if (prefs.firstHide) {
+            binding.search.hideKeyboard()
+            prefs.firstHide = false
+            viewModel.showDialog.postValue(Constants.Dialog.HIDDEN)
+            findNavController().navigate(R.id.action_appListFragment_to_settingsFragment2)
+        }
+        viewModel.getAppList()
+        viewModel.getHiddenApps()
+    }
+
+    private fun openInfo(appModel: AppModel) {
+        openAppInfo(requireContext(), appModel.user, appModel.appPackage)
+        findNavController().popBackStack(R.id.mainFragment, false)
+    }
+
+    private fun deleteApp(appModel: AppModel) {
+        when (appModel) {
+            is AppModel.PrivateSpaceHeader -> {}
+            is AppModel.PinnedShortcut ->
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1) {
+                    requireContext().deletePinnedShortcut(
+                        packageName = appModel.appPackage,
+                        shortcutIdToDelete = appModel.shortcutId,
+                        user = appModel.user,
+                    )
+                }
+
+            is AppModel.App -> {
+                if (appModel.user != Process.myUserHandle()) {
+                    openAppInfo(requireContext(), appModel.user, appModel.appPackage)
+                } else if (requireContext().isSystemApp(appModel.appPackage, appModel.user)) {
+                    requireContext().showToast(getString(R.string.system_app_cannot_delete))
+                    openAppInfo(requireContext(), appModel.user, appModel.appPackage)
+                } else {
+                    requireContext().uninstall(appModel.appPackage)
+                }
+            }
+        }
+        viewModel.getAppList()
+    }
+
+    private fun getOriginalAppName(appModel: AppModel.App): String {
+        val launcherApps = requireContext().getSystemService(Context.LAUNCHER_APPS_SERVICE) as LauncherApps
+        return try {
+            launcherApps.getActivityList(appModel.appPackage, appModel.user).firstOrNull()?.label?.toString().orEmpty()
+        } catch (_: Exception) {
+            ""
+        }
+    }
+
     private fun getRecyclerViewOnScrollListener(): RecyclerView.OnScrollListener {
         return object : RecyclerView.OnScrollListener() {
 
@@ -373,8 +446,17 @@ class AppDrawerFragment : BaseFragment() {
     }
 
     override fun onDestroyView() {
+        dialog?.dismiss()
+        dialog = null
         super.onDestroyView()
         searchTextView = null
         _binding = null
+    }
+
+    companion object {
+        private const val MENU_RENAME = 1
+        private const val MENU_HIDE = 2
+        private const val MENU_INFO = 3
+        private const val MENU_DELETE = 4
     }
 }

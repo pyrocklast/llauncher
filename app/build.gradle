@@ -86,6 +86,9 @@ dependencies {
     // Navigation
     implementation libs.navigation.fragment.ktx
 
+    // Lite: native settings screen
+    implementation libs.preference.ktx
+
     //Material dependency
     implementation libs.material
 
