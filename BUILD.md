@@ -82,7 +82,7 @@ Install Obtainium from F-Droid, then **Add app**, paste `https://github.com/pyro
 
 ### Getting Olauncher's updates
 
-Open **Actions > Sync with Olauncher > Run workflow**. It merges Olauncher's new changes into your repository and lists them in the run's summary. Then run **Release** to build them. If Olauncher's changes clash with Lite's, it stops without changing anything, and the merge has to be done in git (see "Updating from upstream" below).
+Open **Actions > Sync with Olauncher > Run workflow**. It merges Olauncher's new changes into your repository and lists them in the run's summary. Then run **Release** to build them. Files Lite deleted on purpose stay deleted, and your README is kept. If Olauncher's changes clash with Lite's in any other way, it stops without changing anything, and the merge has to be done in git (see "Updating from upstream" below).
 
 ## Building on your PC (Fedora)
 

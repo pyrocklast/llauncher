@@ -2,8 +2,9 @@
 #
 # Run it from the repository's Actions tab: Sync with Olauncher > Run workflow.
 # Then run Release to build an APK with the changes.
-# If Olauncher's changes clash with Lite's, it stops and changes nothing; the merge then
-# has to be done by hand in git.
+# Files Lite deleted on purpose stay deleted even if Olauncher has changed them, and Lite's README
+# is always kept. Any other clash with Lite's changes stops the sync without changing anything;
+# the merge then has to be done by hand in git.
 
 name: Sync with Olauncher
 
@@ -39,9 +40,22 @@ jobs:
           git log --oneline --no-merges HEAD..upstream/master | sed 's/^/- /' >> "$GITHUB_STEP_SUMMARY"
 
           if ! git merge --no-edit upstream/master; then
-            git merge --abort
-            echo "::error::Olauncher's changes clash with Lite's, so nothing was changed. The merge has to be done by hand in git."
-            exit 1
+            # Files Lite deleted on purpose (removed features, Olauncher-only docs) stay deleted
+            git status --porcelain | sed -n 's/^DU //p' > "$RUNNER_TEMP/kept-deleted.txt"
+            while IFS= read -r file; do
+              git rm -q -- "$file"
+            done < "$RUNNER_TEMP/kept-deleted.txt"
+
+            if [ -n "$(git diff --name-only --diff-filter=U)" ]; then
+              git merge --abort
+              echo "::error::Olauncher's changes clash with Lite's, so nothing was changed. The merge has to be done by hand in git."
+              exit 1
+            fi
+            git commit --no-edit
+            if [ -s "$RUNNER_TEMP/kept-deleted.txt" ]; then
+              echo "Kept deleted (Olauncher changed them, Lite doesn't use them):" >> "$GITHUB_STEP_SUMMARY"
+              sed 's/^/- /' "$RUNNER_TEMP/kept-deleted.txt" >> "$GITHUB_STEP_SUMMARY"
+            fi
           fi
           git push
           echo "Merged. Run the Release workflow to build an APK with these changes." >> "$GITHUB_STEP_SUMMARY"
