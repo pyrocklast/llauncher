@@ -43,3 +43,4 @@ jobs:
           fi
           git push
           echo "Merged. Run the Release workflow to build an APK with these changes." >> "$GITHUB_STEP_SUMMARY"
+
