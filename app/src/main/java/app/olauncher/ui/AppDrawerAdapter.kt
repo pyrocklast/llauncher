@@ -14,7 +14,7 @@ import app.olauncher.data.AppModel
 import app.olauncher.data.Constants
 import app.olauncher.databinding.AdapterAppDrawerBinding
 import app.olauncher.databinding.AdapterPrivateSpaceHeaderBinding
-import java.text.Normalizer
+import app.olauncher.helper.appLabelMatches
 
 class AppDrawerAdapter(
     private var flag: Int,
@@ -51,8 +51,6 @@ class AppDrawerAdapter(
     private var autoLaunch = true
     private var autoLaunchedQuery: String? = null
     var allowAutoLaunch = true
-    private val diacriticsRegex = Regex("\\p{InCombiningDiacriticalMarks}+")
-    private val separatorsRegex = Regex("[-_+,.`'\\s\\p{Z}]")
     private val appFilter = createAppFilter()
     private val myUserHandle = android.os.Process.myUserHandle()
 
@@ -163,17 +161,6 @@ class AppDrawerAdapter(
             e.printStackTrace()
         }
     }
-
-    private fun appLabelMatches(appLabel: String, charSearch: CharSequence): Boolean {
-        if (appLabel.contains(charSearch.trim(), true)) return true
-        val query = charSearch.normalizeForSearch()
-        return query.isNotEmpty() && appLabel.normalizeForSearch().contains(query, true)
-    }
-
-    private fun CharSequence.normalizeForSearch(): String =
-        Normalizer.normalize(this, Normalizer.Form.NFD)
-            .replace(diacriticsRegex, "")
-            .replace(separatorsRegex, "")
 
     fun setAppList(appsList: MutableList<AppModel>) {
         // Add empty app for bottom padding in recyclerview and assign to list
