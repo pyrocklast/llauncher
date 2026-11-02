@@ -240,10 +240,11 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
         binding.date.isVisible = Constants.DateTime.isDateVisible(prefs.dateTimeVisibility)
 
         // Lite: the date uses the language chosen for this app in Android's settings (Android 13+),
-        // or the phone's language when none is chosen, in its usual format, short or full:
-        // e.g. "lun. 2 nov." or "lundi 2 novembre". Upstream used English word order for every language.
+        // or the phone's language when none is chosen, in its usual format, short, full or numeric:
+        // e.g. "lun. 2 nov.", "lundi 2 novembre" or "lun. 02/11". Upstream used English word order
+        // for every language.
         val dateLocale = requireContext().dateLocale()
-        var dateText = requireContext().formatHomeDate(LitePrefs(requireContext()).longDate)
+        var dateText = requireContext().formatHomeDate(LitePrefs(requireContext()).dateStyle)
 
         if (!prefs.showStatusBar) {
             val battery = (requireContext().getSystemService(Context.BATTERY_SERVICE) as BatteryManager)

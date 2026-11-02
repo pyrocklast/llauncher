@@ -136,7 +136,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
             dateStyle = item(R.string.lite_date_style) { showDateStyleDialog() }
             clockSize = item(R.string.lite_size) { showClockSizeDialog() }
             clockApp = item(R.string.lite_tap_time) {
-                showTapAppDialog(
+                showAppChoiceDialog(
                     R.string.lite_tap_time, R.string.lite_default_clock_app,
                     isDefault = prefs.clockAppPackage.isBlank(), chooseFlag = Constants.FLAG_SET_CLOCK_APP,
                 ) {
@@ -146,7 +146,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
                 }
             }
             calendarApp = item(R.string.lite_tap_date) {
-                showTapAppDialog(
+                showAppChoiceDialog(
                     R.string.lite_tap_date, R.string.lite_default_calendar_app,
                     isDefault = prefs.calendarAppPackage.isBlank(), chooseFlag = Constants.FLAG_SET_CALENDAR_APP,
                 ) {
@@ -163,7 +163,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
                 prefs.autoShowKeyboard = checked
                 true
             }
-            hiddenApps = item(R.string.hidden_apps) { showHiddenApps() }
+            hiddenApps = item(R.string.lite_hidden_apps) { showHiddenApps() }
         }
 
         screen.category(R.string.appearance).apply {
@@ -181,14 +181,23 @@ class SettingsFragment : PreferenceFragmentCompat() {
             }
         }
 
-        // One row per swipe: the text chooses the app, the switch turns the swipe on or off
+        // One row per swipe: the text chooses the default app or one of yours, the switch turns
+        // the swipe on or off
         screen.category(R.string.gestures).apply {
-            swipeLeft = splitSwitch(R.string.lite_swipe_left, prefs.swipeLeftEnabled,
-                onClick = { pickApp(Constants.FLAG_SET_SWIPE_LEFT_APP) }) { checked ->
+            swipeLeft = splitSwitch(R.string.lite_swipe_left, prefs.swipeLeftEnabled, onClick = {
+                showAppChoiceDialog(
+                    R.string.lite_swipe_left_opens, R.string.lite_default_camera_app,
+                    isDefault = prefs.appPackageSwipeLeft.isBlank(), chooseFlag = Constants.FLAG_SET_SWIPE_LEFT_APP,
+                ) { resetSwipeApp(isLeft = true) }
+            }) { checked ->
                 prefs.swipeLeftEnabled = checked
             }
-            swipeRight = splitSwitch(R.string.lite_swipe_right, prefs.swipeRightEnabled,
-                onClick = { pickApp(Constants.FLAG_SET_SWIPE_RIGHT_APP) }) { checked ->
+            swipeRight = splitSwitch(R.string.lite_swipe_right, prefs.swipeRightEnabled, onClick = {
+                showAppChoiceDialog(
+                    R.string.lite_swipe_right_opens, R.string.lite_default_phone_app,
+                    isDefault = prefs.appPackageSwipeRight.isBlank(), chooseFlag = Constants.FLAG_SET_SWIPE_RIGHT_APP,
+                ) { resetSwipeApp(isLeft = false) }
+            }) { checked ->
                 prefs.swipeRightEnabled = checked
             }
         }
@@ -285,7 +294,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
         homeAppsNum.value = prefs.homeAppsNum
         dateTime.summary = getString(dateTimeLabel(prefs.dateTimeVisibility))
         val dateShown = Constants.DateTime.isDateVisible(prefs.dateTimeVisibility)
-        dateStyle.summary = requireContext().formatHomeDate(litePrefs.longDate)
+        dateStyle.summary = requireContext().formatHomeDate(litePrefs.dateStyle)
         dateStyle.isEnabled = dateShown
         clockSize.summary = formatPercent(litePrefs.clockScale)
         clockSize.isEnabled = prefs.dateTimeVisibility != Constants.DateTime.OFF
@@ -334,14 +343,13 @@ class SettingsFragment : PreferenceFragmentCompat() {
         }
     }
 
-    // Lite: short or full date, each shown as today's date in the language the home screen uses
+    // Lite: short, full or numeric date, each shown as today's date in the language the home
+    // screen uses. The numeric one follows that language's order (day/month, or month/day in the US).
     private fun showDateStyleDialog() {
-        val labels = arrayOf<CharSequence>(
-            requireContext().formatHomeDate(long = false),
-            requireContext().formatHomeDate(long = true),
-        )
-        showChoiceDialog(R.string.lite_date_style, labels, if (litePrefs.longDate) 1 else 0) { which ->
-            litePrefs.longDate = which == 1
+        val styles = intArrayOf(LitePrefs.DATE_SHORT, LitePrefs.DATE_FULL, LitePrefs.DATE_NUMERIC)
+        val labels = Array<CharSequence>(styles.size) { requireContext().formatHomeDate(styles[it]) }
+        showChoiceDialog(R.string.lite_date_style, labels, styles.indexOf(litePrefs.dateStyle)) { which ->
+            litePrefs.dateStyle = styles[which]
             refreshSummaries()
         }
     }
@@ -371,9 +379,9 @@ class SettingsFragment : PreferenceFragmentCompat() {
         }
     }
 
-    // Lite: what tapping the clock or date opens: Android's default app for it, or one you choose.
-    // Long-pressing the clock or date on the home screen chooses one too.
-    private fun showTapAppDialog(
+    // Lite: what tapping the clock or date, or a swipe, opens: Android's default app for it, or one
+    // you choose. Long-pressing the clock or date on the home screen chooses one too.
+    private fun showAppChoiceDialog(
         @StringRes title: Int,
         @StringRes defaultLabel: Int,
         isDefault: Boolean,
@@ -412,7 +420,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
             // A live clock with the home screen's format, so the preview shows the real time
             sizeBinding.clockPreview.isVisible = true
             sizeBinding.datePreview.isVisible = true
-            sizeBinding.datePreview.text = requireContext().formatHomeDate(litePrefs.longDate)
+            sizeBinding.datePreview.text = requireContext().formatHomeDate(litePrefs.dateStyle)
             listOf(sizeBinding.clockPreview, sizeBinding.datePreview)
         },
     ) { scale ->
@@ -488,12 +496,32 @@ class SettingsFragment : PreferenceFragmentCompat() {
             .apply { show() }
     }
 
+    // Back to upstream's defaults: no app saved, so the swipe opens the camera (left) or the phone
+    // (right). The saved name stays non-empty, or the home screen would ask you to long-press instead.
+    private fun resetSwipeApp(isLeft: Boolean) {
+        if (isLeft) {
+            prefs.appNameSwipeLeft = "Camera"
+            prefs.appPackageSwipeLeft = ""
+            prefs.appActivityClassNameSwipeLeft = ""
+            prefs.appUserSwipeLeft = ""
+            prefs.isShortcutSwipeLeft = false
+            prefs.shortcutIdSwipeLeft = ""
+        } else {
+            prefs.appNameSwipeRight = "Phone"
+            prefs.appPackageSwipeRight = ""
+            prefs.appActivityClassNameRight = ""
+            prefs.appUserSwipeRight = ""
+            prefs.isShortcutSwipeRight = false
+            prefs.shortcutIdSwipeRight = ""
+        }
+    }
+
     // Navigation
 
     private fun showHiddenApps() {
         val count = viewModel.hiddenApps.value?.size ?: prefs.hiddenApps.size
         if (count == 0) {
-            requireContext().showToast(getString(R.string.no_hidden_apps))
+            requireContext().showToast(getString(R.string.lite_no_hidden_apps))
             return
         }
         viewModel.getHiddenApps()

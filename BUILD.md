@@ -20,9 +20,9 @@ A personal fork of [Olauncher](https://github.com/tanujnotes/Olauncher) with eve
   - App name size is a slider with a preview of your home apps. It applies only to app names (home screen, drawer and its search box), not to settings or menus.
   - Clock and date size is a separate slider, previewed with the live time and date.
   - Both sizes are relative to Android's own font size, so raising that for the whole phone enlarges the launcher too.
-  - Date style: short ("lun. 2 nov.") or full ("lundi 2 novembre").
+  - Date style: short ("lun. 2 nov."), full ("lundi 2 novembre") or numeric ("lun. 02/11"), each in the order your language uses.
   - Clock and date has rows for what tapping the time and the date opens: Android's default app, or one you choose. Long-pressing the clock or date on the home screen still chooses an app, but no longer forgets the current one if you back out.
-  - Gestures has one row per swipe, like Android's Wi-Fi row: tap the text to choose the app, flip the switch to turn the swipe on or off.
+  - Gestures has one row per swipe, like Android's Wi-Fi row: tap the text to choose the default app (camera or phone) or one of yours, flip the switch to turn the swipe on or off.
   - Theme, bold font and sizes apply without reloading anything; the home screen and drawer use them when you go back.
   - Long-pressing an app in the drawer opens a normal pop-up menu (Rename, Hide, App info, Uninstall). Rename opens a dialog, with a button to restore the original name. The new name also shows on the home screen and in the swipe settings, so the app picker's separate Rename button is gone. Hiding an app the first time shows a short note on where to find it, instead of a dialog and a trip to settings.
   - Messages use standard Material dialogs.

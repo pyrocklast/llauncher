@@ -91,7 +91,7 @@ class AppDrawerFragment : BaseFragment() {
 
     private fun initViews() {
         if (flag == Constants.FLAG_HIDDEN_APPS)
-            binding.search.queryHint = getString(R.string.hidden_apps)
+            binding.search.queryHint = getString(R.string.lite_hidden_apps)
         else if (flag in Constants.FLAG_SET_HOME_APP_1..Constants.FLAG_SET_CALENDAR_APP)
             binding.search.queryHint = getString(R.string.lite_choose_app)
         try {
@@ -344,7 +344,7 @@ class AppDrawerFragment : BaseFragment() {
         if (prefs.firstHide) {
             prefs.firstHide = false
             requireContext().showToast(
-                getString(R.string.lite_first_hide, getString(R.string.lite_app_drawer), getString(R.string.hidden_apps)),
+                getString(R.string.lite_first_hide, getString(R.string.lite_app_drawer), getString(R.string.lite_hidden_apps)),
                 Toast.LENGTH_LONG
             )
         }

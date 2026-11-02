@@ -7,6 +7,7 @@ import android.os.Build
 import android.text.format.DateFormat
 import android.util.TypedValue
 import android.widget.TextView
+import app.olauncher.data.LitePrefs
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -36,11 +37,16 @@ fun Context.dateLocale(): Locale {
 }
 
 /**
- * Today's date in that language's usual format: short ("lun. 2 nov.", "Mon 2 Nov") or
- * [long] ("lundi 2 novembre", "Monday 2 November").
+ * Today's date in that language's usual format and order, in one of the [LitePrefs] date styles:
+ * short ("lun. 2 nov.", "Mon 2 Nov"), full ("lundi 2 novembre", "Monday 2 November") or numeric
+ * ("lun. 02/11", "Mon 02/11", or "Mon, 11/2" in US English). Always with the weekday, never the year.
  */
-fun Context.formatHomeDate(long: Boolean, date: Date = Date()): String {
+fun Context.formatHomeDate(style: Int, date: Date = Date()): String {
     val locale = dateLocale()
-    val pattern = DateFormat.getBestDateTimePattern(locale, if (long) "EEEEdMMMM" else "EEEdMMM")
-    return SimpleDateFormat(pattern, locale).format(date)
+    val skeleton = when (style) {
+        LitePrefs.DATE_FULL -> "EEEEdMMMM"
+        LitePrefs.DATE_NUMERIC -> "EEEdM"
+        else -> "EEEdMMM"
+    }
+    return SimpleDateFormat(DateFormat.getBestDateTimePattern(locale, skeleton), locale).format(date)
 }

@@ -30,9 +30,13 @@
     <string name="lite_show_status_bar">Show status bar</string>
     <string name="lite_theme">Theme</string>
     <string name="lite_text_size_hint">Applied on top of Android\'s own font size</string>
-    <string name="lite_set_as_home_first">Set %1$s as your Home app first</string>
+    <string name="lite_set_as_home_first">Set %1$s as default launcher first</string>
     <string name="lite_swipe_left">Swipe left</string>
     <string name="lite_swipe_right">Swipe right</string>
+    <string name="lite_swipe_left_opens">Swipe left opens</string>
+    <string name="lite_swipe_right_opens">Swipe right opens</string>
+    <string name="lite_hidden_apps">Hidden apps</string>
+    <string name="lite_no_hidden_apps">No hidden apps</string>
     <string name="lite_status_bar_off_summary">Battery level shows after the date</string>
     <string name="lite_tap_time">Tapping the time opens</string>
     <string name="lite_tap_date">Tapping the date opens</string>
