@@ -5,7 +5,12 @@
     <!-- Settings screen -->
     <string name="lite_settings_title">%1$s settings</string>
     <string name="lite_navigate_back">Back</string>
-    <string name="lite_general">General</string>
+    <string name="lite_about">About</string>
+    <string name="lite_number_of_apps">Number of apps</string>
+    <string name="lite_clock_and_date">Clock and date</string>
+    <string name="lite_show">Show</string>
+    <string name="lite_size">Size</string>
+    <string name="lite_show_keyboard">Show keyboard automatically</string>
     <string name="lite_app_drawer">App drawer</string>
     <string name="lite_app_info">App info</string>
     <string name="lite_version">Version %1$s</string>
@@ -14,7 +19,6 @@
         <item quantity="one">%d app</item>
         <item quantity="other">%d apps</item>
     </plurals>
-    <string name="lite_date_and_time">Date and time</string>
     <string name="lite_date_style">Date style</string>
     <string name="lite_app_name_size">App name size</string>
     <string name="lite_clock_size">Clock and date size</string>

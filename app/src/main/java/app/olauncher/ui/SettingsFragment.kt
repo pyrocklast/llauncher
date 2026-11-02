@@ -93,23 +93,19 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
         val screen = preferenceManager.createPreferenceScreen(preferenceManager.context)
 
-        screen.category(R.string.lite_general).apply {
-            defaultLauncher = item(R.string.set_as_default_launcher) { viewModel.resetLauncherLiveData.call() }
-            hiddenApps = item(R.string.hidden_apps) { showHiddenApps() }
-            item(R.string.lite_app_info) {
-                openAppInfo(requireContext(), Process.myUserHandle(), BuildConfig.APPLICATION_ID)
-            }.summary = getString(R.string.lite_version, BuildConfig.VERSION_NAME)
-        }
+        // Lite: settings are grouped by the part of the launcher they change, in the order you'd
+        // look for them. Row labels are short because the section heading gives the context.
+
+        // First and on its own: the one thing to do right after installing
+        defaultLauncher = screen.item(R.string.set_as_default_launcher) { viewModel.resetLauncherLiveData.call() }
 
         screen.category(R.string.home_screen).apply {
             // Inline slider, applied as you move it: changing the count is cheap and easy to undo
-            homeAppsNum = slider(R.string.apps_on_home_screen, valueFrom = 0, valueTo = 8, value = prefs.homeAppsNum) { count ->
+            homeAppsNum = slider(R.string.lite_number_of_apps, valueFrom = 0, valueTo = 8, value = prefs.homeAppsNum) { count ->
                 prefs.homeAppsNum = count
                 viewModel.refreshHome(true)
             }
             homeAppsNum.formatValue = { count -> resources.getQuantityString(R.plurals.lite_app_count, count, count) }
-            dateTime = item(R.string.lite_date_and_time) { showDateTimeDialog() }
-            dateStyle = item(R.string.lite_date_style) { showDateStyleDialog() }
             homeAlignment = item(R.string.lite_alignment) { showHomeAlignmentDialog() }
             bottomAlignment = switch(R.string.lite_align_bottom, prefs.homeBottomAlignment) { checked ->
                 if (viewModel.isOlauncherDefault.value != true) {
@@ -124,29 +120,36 @@ class SettingsFragment : PreferenceFragmentCompat() {
                     true
                 }
             }
-            switch(R.string.lite_show_status_bar, prefs.showStatusBar) { checked ->
-                prefs.showStatusBar = checked
-                if (checked) requireActivity().window.showStatusBar()
-                else requireActivity().window.hideStatusBar()
-                true
-            }
+        }
+
+        screen.category(R.string.lite_clock_and_date).apply {
+            dateTime = item(R.string.lite_show) { showDateTimeDialog() }
+            dateStyle = item(R.string.lite_date_style) { showDateStyleDialog() }
+            clockSize = item(R.string.lite_size) { showClockSizeDialog() }
         }
 
         screen.category(R.string.lite_app_drawer).apply {
             drawerAlignment = item(R.string.lite_alignment) { showDrawerAlignmentDialog() }
-            switch(R.string.auto_show_keyboard, prefs.autoShowKeyboard) { checked ->
+            switch(R.string.lite_show_keyboard, prefs.autoShowKeyboard) { checked ->
                 prefs.autoShowKeyboard = checked
                 true
             }
+            hiddenApps = item(R.string.hidden_apps) { showHiddenApps() }
         }
 
         screen.category(R.string.appearance).apply {
             appTheme = item(R.string.lite_theme) { showThemeDialog() }
             textSize = item(R.string.lite_app_name_size) { showAppNameSizeDialog() }
-            clockSize = item(R.string.lite_clock_size) { showClockSizeDialog() }
             switch(R.string.bold_font, prefs.boldFont) { checked ->
                 prefs.boldFont = checked
                 requireActivity().recreate()
+                true
+            }
+            // It affects every screen of the launcher, not just home
+            switch(R.string.lite_show_status_bar, prefs.showStatusBar) { checked ->
+                prefs.showStatusBar = checked
+                if (checked) requireActivity().window.showStatusBar()
+                else requireActivity().window.hideStatusBar()
                 true
             }
         }
@@ -167,6 +170,12 @@ class SettingsFragment : PreferenceFragmentCompat() {
             }
             swipeRightApp = item(R.string.swipe_right_app) { pickApp(Constants.FLAG_SET_SWIPE_RIGHT_APP) }
             swipeRightApp.isEnabled = prefs.swipeRightEnabled
+        }
+
+        screen.category(R.string.lite_about).apply {
+            item(R.string.lite_app_info) {
+                openAppInfo(requireContext(), Process.myUserHandle(), BuildConfig.APPLICATION_ID)
+            }.summary = getString(R.string.lite_version, BuildConfig.VERSION_NAME)
         }
 
         preferenceScreen = screen
@@ -266,7 +275,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
     private fun showDateTimeDialog() {
         val labels = labelsFor(dateTimeOptions) { dateTimeLabel(it) }
-        showChoiceDialog(R.string.lite_date_and_time, labels, dateTimeOptions.indexOf(prefs.dateTimeVisibility)) { which ->
+        showChoiceDialog(R.string.lite_clock_and_date, labels, dateTimeOptions.indexOf(prefs.dateTimeVisibility)) { which ->
             prefs.dateTimeVisibility = dateTimeOptions[which]
             viewModel.toggleDateTime()
             refreshSummaries()

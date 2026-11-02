@@ -2,7 +2,12 @@
 <resources>
     <string name="lite_settings_title">Paramètres de %1$s</string>
     <string name="lite_navigate_back">Retour</string>
-    <string name="lite_general">Général</string>
+    <string name="lite_about">À propos</string>
+    <string name="lite_number_of_apps">Nombre d\'applis</string>
+    <string name="lite_clock_and_date">Horloge et date</string>
+    <string name="lite_show">Afficher</string>
+    <string name="lite_size">Taille</string>
+    <string name="lite_show_keyboard">Afficher le clavier automatiquement</string>
     <string name="lite_app_drawer">Tiroir d\'applis</string>
     <string name="lite_app_info">Infos sur l\'appli</string>
     <string name="lite_version">Version %1$s</string>
@@ -11,7 +16,6 @@
         <item quantity="one">%d appli</item>
         <item quantity="other">%d applis</item>
     </plurals>
-    <string name="lite_date_and_time">Date et heure</string>
     <string name="lite_date_style">Format de la date</string>
     <string name="lite_app_name_size">Taille des noms d\'applis</string>
     <string name="lite_clock_size">Taille de l\'heure et de la date</string>

@@ -15,7 +15,7 @@ A personal fork of [Olauncher](https://github.com/tanujnotes/Olauncher) with eve
 ## What's changed
 
 - **Native look for menus, dialogs and settings**: the app uses Android's Material 3 theme, with Material You colours from your wallpaper on Android 12 and later.
-  - Settings is a standard Android settings screen titled "Olauncher Lite settings", with a large title bar that shrinks as you scroll and a back arrow. It's grouped into General, Home screen, App drawer, Appearance and Gestures, with switches and choice dialogs. Hidden apps (with a count), drawer alignment and the System theme have their own rows instead of hidden taps and long presses, and App info shows the version.
+  - Settings is a standard Android settings screen titled "Olauncher Lite settings", with a large title bar that shrinks as you scroll and a back arrow. Setting the default launcher comes first, then sections for each part of the launcher: Home screen, Clock and date, App drawer, Appearance, Gestures and About, with switches, sliders and choice dialogs. Hidden apps (with a count, under App drawer), drawer alignment and the System theme have their own rows instead of hidden taps and long presses, and App info (under About) shows the version.
   - The number of apps on the home screen is a slider right in the settings list, applied as you move it.
   - App name size is a slider with a preview of your home apps. It applies only to app names (home screen, drawer and its search box), not to settings or menus.
   - Clock and date size is a separate slider, previewed with the live time and date.
