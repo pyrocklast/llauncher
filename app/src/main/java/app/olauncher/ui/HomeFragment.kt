@@ -133,9 +133,10 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
             R.id.homeApp7 -> showAppList(Constants.FLAG_SET_HOME_APP_7, prefs.appName7.isNotEmpty(), true)
             R.id.homeApp8 -> showAppList(Constants.FLAG_SET_HOME_APP_8, prefs.appName8.isNotEmpty(), true)
             // Lite: the current app stays until you pick another, so backing out changes nothing.
-            // Settings > Clock and date can set it back to the default app.
-            R.id.clock -> showAppList(Constants.FLAG_SET_CLOCK_APP)
-            R.id.date -> showAppList(Constants.FLAG_SET_CALENDAR_APP)
+            // Settings > Clock and date can set it back to the default app. Hidden apps are listed
+            // too, as they are for home apps and in settings.
+            R.id.clock -> showAppList(Constants.FLAG_SET_CLOCK_APP, includeHiddenApps = true)
+            R.id.date -> showAppList(Constants.FLAG_SET_CALENDAR_APP, includeHiddenApps = true)
 
             R.id.setDefaultLauncher -> {
                 prefs.hideSetDefaultLauncher = true

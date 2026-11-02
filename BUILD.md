@@ -14,8 +14,8 @@ A personal fork of [Olauncher](https://github.com/tanujnotes/Olauncher) with eve
 
 ## What's changed
 
-- **Native look for menus, dialogs and settings**: the app uses Android's Material 3 theme, with Material You colours from your wallpaper on Android 12 and later. Settings, menus and dialogs follow the phone's dark mode and font, and settings always shows the status bar. The launcher's theme, bold text and status bar settings apply to the home screen and app drawer only.
-  - Settings is a standard Android settings screen titled "Olauncher Lite settings", with a large title bar that shrinks as you scroll and a back arrow. Setting the default launcher comes first, then sections for each part of the launcher: Home screen, Clock and date, App drawer, Appearance, Gestures and About, with switches, sliders and choice dialogs. Hidden apps (with a count, under App drawer), drawer alignment and the System theme have their own rows instead of hidden taps and long presses, and App info (under About) shows the version.
+- **Native look for menus, dialogs and settings**: the app uses Android's Material 3 theme, with Material You colours from your wallpaper on Android 12 and later. Settings, menus and dialogs follow the phone's dark mode and font, and settings always shows the status bar. The launcher's text colour (upstream's theme), bolder app names (upstream's bold font) and status bar settings apply to the home screen and app drawer only, and their names say so.
+  - Settings is a standard Android settings screen titled "Olauncher Lite settings", with a large title bar that shrinks as you scroll and a back arrow. Setting the default launcher comes first until Lite is your launcher (afterwards "Change default launcher" moves under About), then sections for each part of the launcher: Home screen, Clock and date, App drawer, Appearance, Gestures and About, with switches, sliders and choice dialogs. Hidden apps (with a count, under App drawer), drawer alignment and following the phone's dark mode have their own rows instead of hidden taps and long presses, and App info (under About) shows the version.
   - The number of apps on the home screen is a slider right in the settings list, applied as you move it.
   - App name size is a slider with a preview of your home apps. It applies only to app names (home screen, drawer and its search box), not to settings or menus.
   - Clock and date size is a separate slider, previewed with the live time and date.
@@ -23,7 +23,7 @@ A personal fork of [Olauncher](https://github.com/tanujnotes/Olauncher) with eve
   - Date style: short ("lun. 2 nov."), full ("lundi 2 novembre") or numeric ("lun. 02/11"), each in the order your language uses.
   - Clock and date has rows for what tapping the time and the date opens: Android's default app, or one you choose. Long-pressing the clock or date on the home screen still chooses an app, but no longer forgets the current one if you back out.
   - Gestures has one row per swipe, like Android's Wi-Fi row: tap the text to choose the default app (camera or phone) or one of yours, flip the switch to turn the swipe on or off.
-  - Theme, bold font and sizes apply without reloading anything; the home screen and drawer use them when you go back.
+  - Text colour, bolder app names and sizes apply without reloading anything; the home screen and drawer use them when you go back.
   - Long-pressing an app in the drawer opens a normal pop-up menu (Rename, Hide, App info, Uninstall). Rename opens a dialog, with a button to restore the original name. The new name also shows on the home screen and in the swipe settings, so the app picker's separate Rename button is gone. Hiding an app the first time shows a short note on where to find it, instead of a dialog and a trip to settings.
   - Messages use standard Material dialogs.
 - The home screen and the app drawer keep Olauncher's own minimal text style.
@@ -34,6 +34,9 @@ A personal fork of [Olauncher](https://github.com/tanujnotes/Olauncher) with eve
   - Long press uses Android's own timing, which follows the "Touch & hold delay" accessibility setting. Upstream added half a second on top.
   - Release builds drop resources nothing uses any more.
   - AppCompat's emoji loader no longer starts with the launcher. Android already has current emoji.
+  - No full reload every 4 hours. Upstream reloaded the launcher when you came home after 4 hours, which could show as a blink; Lite's app list and theme don't need it.
+  - The deprecated lifecycle-extensions library is gone; nothing used it.
+- **Fixes**: Persian, offered in Android's per-app language list, is now included in the build (upstream left it out, so it showed English). Long-pressing the clock or date lists hidden apps too, like the settings rows.
 
 - **GitHub builds**: two workflows, **Release** (builds a signed APK and publishes it for Obtainium) and **Sync with Olauncher** (merges upstream's changes). See "Building on GitHub" below.
 

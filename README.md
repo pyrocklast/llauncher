@@ -17,7 +17,7 @@ It installs as a separate app (`app.olauncher.lite`), so it can sit alongside th
 - The internet, wallpaper and usage-access permissions
 
 **Changed**
-- Settings, menus and dialogs use Android's own Material 3 look, with Material You colours on Android 12 and later. They follow your phone's dark mode and always show the status bar: the launcher's theme, bold text and status bar settings change the home screen and app drawer only
+- Settings, menus and dialogs use Android's own Material 3 look, with Material You colours on Android 12 and later. They follow your phone's dark mode and always show the status bar: the launcher's text colour, bolder app names and status bar settings change the home screen and app drawer only. "Theme" is called "Text colour" here, with choices that say what they do (dark text for light wallpapers, light text for dark ones, or match dark mode)
 - Separate sliders for the size of app names and of the clock and date, both on top of Android's own font size; settings and menus keep Android's size. The number of home apps is a slider too
 - Long-pressing an app in the drawer opens a normal menu: Rename, Hide, App info, Uninstall. A new name shows everywhere the app is, home screen and swipe settings included; this replaces the Rename button in the home app picker
 - Settings choose what tapping the time and the date opens. Each swipe has one row: tap it to choose the default app or one of yours, or flip its switch to turn the swipe on or off

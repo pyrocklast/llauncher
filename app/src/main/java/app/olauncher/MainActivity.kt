@@ -25,7 +25,6 @@ import androidx.navigation.findNavController
 import app.olauncher.data.Constants
 import app.olauncher.data.Prefs
 import app.olauncher.databinding.ActivityMainBinding
-import app.olauncher.helper.hasBeenHours
 import app.olauncher.helper.isDefaultLauncher
 import app.olauncher.helper.isEinkDisplay
 import app.olauncher.helper.isSystemAnimationsDisabled
@@ -122,11 +121,6 @@ class MainActivity : AppCompatActivity() {
         }
         // Not exported: only the system (and this app) can deliver these
         ContextCompat.registerReceiver(this, profileReceiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
-    }
-
-    override fun onStart() {
-        super.onStart()
-        restartLauncherOrCheckTheme()
     }
 
     override fun onResume() {
@@ -247,15 +241,11 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    // Lite: upstream also checked here that the activity's theme matched the launcher theme, and
-    // reloaded if not. The launcher theme is now applied to the home screen and drawer directly.
-    private fun restartLauncherOrCheckTheme() {
-        if (prefs.launcherRestartTimestamp.hasBeenHours(4)) {
-            prefs.launcherRestartTimestamp = System.currentTimeMillis()
-            cacheDir.deleteRecursively()
-            recreate()
-        }
-    }
+    // Lite: no restart every 4 hours. Upstream reloaded the whole launcher when you came home after
+    // 4 hours, "for stability", and cleared its cache folder; it also reloaded whenever the screen's
+    // colours didn't match its theme. Lite keeps nothing in that folder, applies the launcher theme
+    // to the home screen and drawer directly, and its app list survives a reload anyway, so the
+    // reload only cost a visible blink.
 
     override fun onDestroy() {
         messageDialog?.dismiss()

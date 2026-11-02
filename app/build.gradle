@@ -56,7 +56,8 @@ dependencies {
     implementation libs.recyclerview
 
     // Android lifecycle
-    implementation libs.lifecycle.extensions
+    // Lite: lifecycle-extensions removed. It's deprecated, nothing here uses it (view models and
+    // LiveData come with the libraries below), and it added a startup initializer.
     implementation libs.lifecycle.viewmodel.ktx
 
     // Navigation
@@ -101,6 +102,9 @@ android {
         } else {
             versionNameSuffix "-lite"
         }
+        // Persian is offered in Android's per-app language list (locales_config.xml) but was
+        // missing from upstream's list of languages to keep, so choosing it showed English
+        resourceConfigurations += ["fa"]
     }
 
     signingConfigs {

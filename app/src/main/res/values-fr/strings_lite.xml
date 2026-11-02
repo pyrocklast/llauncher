@@ -26,7 +26,11 @@
     <string name="lite_drawer_alignment">Alignement du tiroir d\'applis</string>
     <string name="lite_align_bottom">Aligner les applis en bas</string>
     <string name="lite_show_status_bar">Afficher la barre d\'état</string>
-    <string name="lite_theme">Thème</string>
+    <string name="lite_text_colour">Couleur du texte</string>
+    <string name="lite_dark_text">Texte sombre, pour fonds d\'écran clairs</string>
+    <string name="lite_light_text">Texte clair, pour fonds d\'écran sombres</string>
+    <string name="lite_text_follows_dark_mode">Selon le mode sombre du téléphone</string>
+    <string name="lite_bolder_app_names">Noms d\'applis plus gras</string>
     <string name="lite_text_size_hint">S\'ajoute à la taille de police d\'Android</string>
     <string name="lite_set_as_home_first">Définissez d\'abord %1$s comme lanceur par défaut</string>
     <string name="lite_swipe_left">Balayer vers la gauche</string>

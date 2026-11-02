@@ -71,6 +71,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
     private var frame: FragmentLiteSettingsBinding? = null
 
     private lateinit var defaultLauncher: Preference
+    private lateinit var changeLauncher: Preference
     private lateinit var hiddenApps: Preference
     private lateinit var homeAppsNum: SliderPreference
     private lateinit var dateTime: Preference
@@ -105,7 +106,8 @@ class SettingsFragment : PreferenceFragmentCompat() {
         // Lite: settings are grouped by the part of the launcher they change, in the order you'd
         // look for them. Row labels are short because the section heading gives the context.
 
-        // First and on its own: the one thing to do right after installing
+        // First and on its own, until Lite is your launcher: the one thing to do after installing.
+        // Afterwards, changing launcher is rare, so it moves under About.
         defaultLauncher = screen.item(R.string.set_as_default_launcher) { viewModel.resetLauncherLiveData.call() }
 
         screen.category(R.string.home_screen).apply {
@@ -167,10 +169,13 @@ class SettingsFragment : PreferenceFragmentCompat() {
         }
 
         screen.category(R.string.appearance).apply {
-            appTheme = item(R.string.lite_theme) { showThemeDialog() }
+            // Called "Text colour" rather than upstream's "Theme": it only sets the home screen and
+            // drawer's text for your wallpaper, while settings follow the phone's dark mode
+            appTheme = item(R.string.lite_text_colour) { showThemeDialog() }
             textSize = item(R.string.lite_app_name_size) { showAppNameSizeDialog() }
             // These apply to the home screen and drawer when you go back to them; nothing reloads
-            switch(R.string.bold_font, prefs.boldFont) { checked ->
+            // Upstream's "Bold font": app names go from light to regular weight, not to bold
+            switch(R.string.lite_bolder_app_names, prefs.boldFont) { checked ->
                 prefs.boldFont = checked
                 true
             }
@@ -203,6 +208,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
         }
 
         screen.category(R.string.lite_about).apply {
+            changeLauncher = item(R.string.change_default_launcher) { viewModel.resetLauncherLiveData.call() }
             item(R.string.lite_app_info) {
                 openAppInfo(requireContext(), Process.myUserHandle(), BuildConfig.APPLICATION_ID)
             }.summary = getString(R.string.lite_version, BuildConfig.VERSION_NAME)
@@ -283,10 +289,9 @@ class SettingsFragment : PreferenceFragmentCompat() {
     }
 
     private fun refreshSummaries() {
-        defaultLauncher.setTitle(
-            if (viewModel.isOlauncherDefault.value == true) R.string.change_default_launcher
-            else R.string.set_as_default_launcher
-        )
+        val isDefaultLauncher = viewModel.isOlauncherDefault.value == true
+        defaultLauncher.isVisible = !isDefaultLauncher
+        changeLauncher.isVisible = isDefaultLauncher
         hiddenApps.summary = viewModel.hiddenApps.value?.size?.let { count ->
             if (count == 0) getString(R.string.lite_none)
             else resources.getQuantityString(R.plurals.lite_app_count, count, count)
@@ -372,7 +377,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
     private fun showThemeDialog() {
         val labels = labelsFor(themeOptions) { themeLabel(it) }
-        showChoiceDialog(R.string.lite_theme, labels, themeOptions.indexOf(prefs.appTheme)) { which ->
+        showChoiceDialog(R.string.lite_text_colour, labels, themeOptions.indexOf(prefs.appTheme)) { which ->
             // The home screen and drawer use it when you go back to them; settings keep the phone's theme
             prefs.appTheme = themeOptions[which]
             refreshSummaries()
@@ -558,11 +563,12 @@ class SettingsFragment : PreferenceFragmentCompat() {
         else -> R.string.off
     }
 
+    // Upstream's Light, Dark and System, described by what they do on the home screen
     @StringRes
     private fun themeLabel(theme: Int): Int = when (theme) {
-        AppCompatDelegate.MODE_NIGHT_YES -> R.string.dark
-        AppCompatDelegate.MODE_NIGHT_NO -> R.string.light
-        else -> R.string.system_default
+        AppCompatDelegate.MODE_NIGHT_YES -> R.string.lite_light_text
+        AppCompatDelegate.MODE_NIGHT_NO -> R.string.lite_dark_text
+        else -> R.string.lite_text_follows_dark_mode
     }
 
     // e.g. "110%", in your language's format

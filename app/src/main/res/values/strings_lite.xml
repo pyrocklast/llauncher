@@ -28,7 +28,12 @@
     <string name="lite_drawer_alignment">App drawer alignment</string>
     <string name="lite_align_bottom">Align apps to the bottom</string>
     <string name="lite_show_status_bar">Show status bar</string>
-    <string name="lite_theme">Theme</string>
+    <!-- The launcher "theme": it only sets the text on the home screen and in the drawer -->
+    <string name="lite_text_colour">Text colour</string>
+    <string name="lite_dark_text">Dark text, for light wallpapers</string>
+    <string name="lite_light_text">Light text, for dark wallpapers</string>
+    <string name="lite_text_follows_dark_mode">Match the phone\'s dark mode</string>
+    <string name="lite_bolder_app_names">Bolder app names</string>
     <string name="lite_text_size_hint">Applied on top of Android\'s own font size</string>
     <string name="lite_set_as_home_first">Set %1$s as default launcher first</string>
     <string name="lite_swipe_left">Swipe left</string>
