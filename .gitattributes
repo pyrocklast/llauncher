@@ -1,0 +1,4 @@
+# Lite: when merging Olauncher's changes, always keep this fork's README (upstream edits its own often).
+# This needs the "ours" merge driver. The Sync with Olauncher workflow sets it up; on a PC, run once:
+#   git config merge.ours.driver true
+README.md merge=ours

@@ -164,7 +164,7 @@ git merge upstream/master
 ./gradlew assembleRelease   # or push, then run Release on GitHub
 ```
 
-Conflicts can only appear in files this fork changed. The fork's build settings are all in one block at the end of `app/build.gradle`, so upstream's version bumps don't clash with them. `git diff upstream/master --stat` lists them. Settings is a full rewrite, so if upstream adds a new setting you'd add it to `SettingsFragment.kt` by hand rather than merging it. The version code follows upstream, so the new APK installs over the old one.
+On a PC, run `git config merge.ours.driver true` once first, so the merge keeps this fork's README (see `.gitattributes`). Conflicts can only appear in files this fork changed. The fork's build settings are all in one block at the end of `app/build.gradle`, so upstream's version bumps don't clash with them. `git diff upstream/master --stat` lists them. Settings is a full rewrite, so if upstream adds a new setting you'd add it to `SettingsFragment.kt` by hand rather than merging it. The version code follows upstream, so the new APK installs over the old one.
 
 ## Changing the name or package
 

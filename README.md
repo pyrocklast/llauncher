@@ -1,43 +1,47 @@
-![Olauncher](https://repository-images.githubusercontent.com/278638069/db0acb80-661b-11eb-803e-926cae5dccb4)
+# Olauncher Lite
 
+A personal fork of [Olauncher](https://github.com/tanujnotes/Olauncher) that keeps the launcher and drops everything else: no daily wallpapers, no screen time, no promotions and no internet access.
 
-# Olauncher | Minimal AF Launcher
-AF stands for Ad-Free! :D
+It installs as a separate app (`app.olauncher.lite`), so it can sit alongside the original.
 
-[<img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png"
-    alt="Get it on Play Store"
-    height="80" align="middle">](https://play.google.com/store/apps/details?id=app.olauncher)
-[<img src="https://fdroid.gitlab.io/artwork/badge/get-it-on.png"
-    alt="Get it on F-Droid"
-    height="80" align="middle">](https://f-droid.org/packages/app.olauncher)
-[<img src="https://gitlab.com/IzzyOnDroid/repo/-/raw/master/assets/IzzyOnDroidButtonGreyBorder_nofont.png"
-    alt="Get it on IzzyOnDroid"
-    height="54" hspace="13" align="middle">](https://apt.izzysoft.de/packages/app.olauncher)
+## What's different from Olauncher
 
-#### Install using [Play Store,](https://play.google.com/store/apps/details?id=app.olauncher) [F-Droid,](https://f-droid.org/packages/app.olauncher) [IzzyOnDroid](https://apt.izzysoft.de/packages/app.olauncher) or the [latest APK.](https://github.com/tanujnotes/Olauncher/releases/)
+**Removed**
+- Daily wallpaper downloads, and the offer to change your wallpaper when you switch theme
+- The screen time counter
+- Rate, review and share prompts, the Pro upsell, New Year messages, and the links and ads in settings
+- Double tap to lock, along with the accessibility service and device admin it needed
+- Web search from the app drawer
+- The internet, wallpaper and usage-access permissions
 
-To maintain the simplicity of the launcher, a few niche features are available but hidden.
+**Changed**
+- Settings, menus and dialogs use Android's own Material 3 look, with Material You colours on Android 12 and later
+- Text size and the number of home apps are set with sliders, and text size follows Android's own font size
+- Long-pressing an app in the drawer opens a normal menu: Rename, Hide, App info, Uninstall
+- Returning home does less work: the app list is cached and refreshed only when apps change, home apps are checked in the background, and long press uses Android's own timing
 
-Please check out the **[About](https://tanujnotes.substack.com/p/olauncher-minimal-af-launcher?utm_source=github)** page in the Olauncher settings for a complete list of features and **FAQs**.
+The home screen and app drawer keep Olauncher's minimal, text-only look.
 
-##
+## Install
 
-License: [GNU GPLv3](https://www.gnu.org/licenses/gpl-3.0.en.html)
+Add `https://github.com/pyrocklast/llauncher` to [Obtainium](https://github.com/ImranR98/Obtainium) (available on F-Droid), and it will keep the app up to date. Or download the APK from [Releases](https://github.com/pyrocklast/llauncher/releases).
 
-Developer: [@tanujnotes](https://x.com/tanujnotes)
+Requires Android 7.0 or later.
 
-##
+## Permissions
 
-### Other apps from team Olauncher:
+| Permission | Used for |
+|---|---|
+| Query all packages | Listing your apps |
+| Expand status bar | Swiping down to open notifications |
+| Request delete packages | Uninstalling apps from the app drawer |
+| Set alarm | Opening your clock app when you tap the time |
+| Access hidden profiles | Showing Private Space apps on Android 15 and later |
 
-- [Pro Launcher](https://play.google.com/store/apps/details?id=app.prolauncher) - Pro version of Olauncher with extra features like widgets, weather, folders, etc.
+## Building
 
-- [Note to Self](https://play.google.com/store/apps/details?id=com.makenotetoself) - Free and [open source](https://github.com/jeerovan/ntsapp) notes app with chat like interface and end-to-end encryption.
+See [BUILD.md](BUILD.md) for building on GitHub or on a PC, and for pulling in Olauncher's updates.
 
-- [Pentastic](https://play.google.com/store/apps/details?id=app.pentastic) - Free and [open source](https://github.com/tanujnotes/Pentastic). A minimal tasks, notes and reminders app.
+## Credits and licence
 
-- [Supernova](https://github.com/tanujnotes/Supernova) - Free and [open source](https://github.com/tanujnotes/Supernova) alternative of Nova Launcher.
-
-##
-
-Thank you!
+Based on [Olauncher](https://github.com/tanujnotes/Olauncher) by [@tanujnotes](https://github.com/tanujnotes) and its contributors. This fork isn't affiliated with or endorsed by them. Like Olauncher, it's licensed under the [GNU GPLv3](LICENSE).
