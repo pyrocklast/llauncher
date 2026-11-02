@@ -1,5 +1,6 @@
 package app.olauncher.ui
 
+import android.app.LocaleManager
 import android.content.Context
 import android.content.res.Resources
 import android.os.BatteryManager
@@ -237,18 +238,23 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
         binding.clock.isVisible = Constants.DateTime.isTimeVisible(prefs.dateTimeVisibility)
         binding.date.isVisible = Constants.DateTime.isDateVisible(prefs.dateTimeVisibility)
 
-        // Lite: the date is in the phone's language and its usual format, e.g. "lun. 2 nov." in French,
-        // "Mon 2 Nov" in British English, "Mon, Nov 2" in American English, even if the launcher
-        // itself is set to another language. Upstream used English word order for every language.
-        val phoneLocale = Resources.getSystem().configuration.locales[0]
-        val pattern = android.text.format.DateFormat.getBestDateTimePattern(phoneLocale, "EEEdMMM")
-        var dateText = SimpleDateFormat(pattern, phoneLocale).format(Date())
+        // Lite: the date uses the language chosen for this app in Android's settings (Android 13+),
+        // or the phone's language when none is chosen, each in its usual format: e.g. "lun. 2 nov."
+        // in French, "Mon 2 Nov" in British English, "Mon, Nov 2" in American English.
+        // Upstream used English word order for every language.
+        val appLocales = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+            requireContext().getSystemService(LocaleManager::class.java)?.applicationLocales
+        else null
+        val dateLocale = if (appLocales != null && !appLocales.isEmpty) appLocales[0]
+        else Resources.getSystem().configuration.locales[0]
+        val pattern = android.text.format.DateFormat.getBestDateTimePattern(dateLocale, "EEEdMMM")
+        var dateText = SimpleDateFormat(pattern, dateLocale).format(Date())
 
         if (!prefs.showStatusBar) {
             val battery = (requireContext().getSystemService(Context.BATTERY_SERVICE) as BatteryManager)
                 .getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
             if (battery > 0)
-                dateText = "$dateText, ${NumberFormat.getPercentInstance(phoneLocale).format(battery / 100.0)}"
+                dateText = "$dateText, ${NumberFormat.getPercentInstance(dateLocale).format(battery / 100.0)}"
         }
         binding.date.text = dateText
     }
