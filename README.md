@@ -4,6 +4,8 @@ A personal fork of [Olauncher](https://github.com/tanujnotes/Olauncher) that kee
 
 It installs as a separate app (`app.olauncher.lite`), so it can sit alongside the original.
 
+> This fork was made with an AI assistant. See [Made with AI](#made-with-ai) for what that means.
+
 ## What's different from Olauncher
 
 **Removed**
@@ -42,6 +44,14 @@ Requires Android 7.0 or later.
 ## Building
 
 See [BUILD.md](BUILD.md) for building on GitHub or on a PC, and for pulling in Olauncher's updates.
+
+## Made with AI
+
+This fork is vibe-coded. Its changes were written by Claude, Anthropic's AI assistant, in conversation with the repository's owner, who decided what to change and tried the builds on their own phone. Each release is built from this source by GitHub, but no person has reviewed the code line by line.
+
+In practice:
+- Olauncher's own code is left as it was wherever this fork didn't need to change it. Most of the fork's changes are marked with `Lite:` comments, and the commits Claude wrote carry a `Co-Authored-By: Claude` line.
+- Expect rough edges. It's a personal project, offered as is under the GPL, without any warranty.
 
 ## Credits and licence
 
