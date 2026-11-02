@@ -1,6 +1,7 @@
 package app.olauncher.ui
 
 import android.content.Context
+import android.content.res.Resources
 import android.os.BatteryManager
 import android.os.Build
 import android.os.Bundle
@@ -29,9 +30,9 @@ import app.olauncher.helper.openDialerApp
 import app.olauncher.helper.showToast
 import app.olauncher.listener.OnSwipeTouchListener
 import app.olauncher.listener.ViewSwipeTouchListener
+import java.text.NumberFormat
 import java.text.SimpleDateFormat
 import java.util.Date
-import java.util.Locale
 
 class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListener {
 
@@ -236,17 +237,20 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
         binding.clock.isVisible = Constants.DateTime.isTimeVisible(prefs.dateTimeVisibility)
         binding.date.isVisible = Constants.DateTime.isDateVisible(prefs.dateTimeVisibility)
 
-//        var dateText = SimpleDateFormat("EEE, d MMM", Locale.getDefault()).format(Date())
-        val dateFormat = SimpleDateFormat("EEE, d MMM", Locale.getDefault())
-        var dateText = dateFormat.format(Date())
+        // Lite: the date is in the phone's language and its usual format, e.g. "lun. 2 nov." in French,
+        // "Mon 2 Nov" in British English, "Mon, Nov 2" in American English, even if the launcher
+        // itself is set to another language. Upstream used English word order for every language.
+        val phoneLocale = Resources.getSystem().configuration.locales[0]
+        val pattern = android.text.format.DateFormat.getBestDateTimePattern(phoneLocale, "EEEdMMM")
+        var dateText = SimpleDateFormat(pattern, phoneLocale).format(Date())
 
         if (!prefs.showStatusBar) {
             val battery = (requireContext().getSystemService(Context.BATTERY_SERVICE) as BatteryManager)
                 .getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY)
             if (battery > 0)
-                dateText = getString(R.string.day_battery, dateText, battery)
+                dateText = "$dateText, ${NumberFormat.getPercentInstance(phoneLocale).format(battery / 100.0)}"
         }
-        binding.date.text = dateText.replace(".,", ",")
+        binding.date.text = dateText
     }
 
     // Lite: names come straight from prefs, so returning home makes no system calls on the main thread.

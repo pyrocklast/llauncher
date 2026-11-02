@@ -27,5 +27,7 @@
     <string name="lite_swipe_left">Swipe left</string>
     <string name="lite_swipe_right">Swipe right</string>
     <!-- App drawer -->
+    <string name="lite_search_apps">Search apps</string>
+    <string name="lite_choose_app">Choose an app</string>
     <string name="lite_original_name">Original name</string>
 </resources>

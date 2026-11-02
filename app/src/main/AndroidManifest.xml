@@ -72,6 +72,18 @@
             </intent-filter>
         </activity>
 
+        <!-- Lite: AppCompat would start its emoji loader with every launch, which looks for a
+             downloadable emoji font and loads it. Android already has current emoji, so it's off. -->
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="androidx.emoji2.text.EmojiCompatInitializer"
+                tools:node="remove" />
+        </provider>
+
     </application>
 
 </manifest>

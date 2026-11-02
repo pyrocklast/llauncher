@@ -19,6 +19,9 @@ import android.view.inputmethod.InputMethodManager
 import android.widget.TextView
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.SearchView
+import androidx.core.view.AccessibilityDelegateCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.accessibility.AccessibilityNodeInfoCompat
 import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -91,13 +94,28 @@ class AppDrawerFragment : BaseFragment() {
         if (flag == Constants.FLAG_HIDDEN_APPS)
             binding.search.queryHint = getString(R.string.hidden_apps)
         else if (flag in Constants.FLAG_SET_HOME_APP_1..Constants.FLAG_SET_CALENDAR_APP)
-            binding.search.queryHint = "Please select an app"
+            binding.search.queryHint = getString(R.string.lite_choose_app)
         try {
             searchTextView = binding.search.findViewById(R.id.search_src_text)
             searchTextView?.gravity = prefs.appLabelAlignment
+            searchTextView?.let { describeSearchForTalkBack(it) }
         } catch (e: Exception) {
             e.printStackTrace()
         }
+    }
+
+    // Lite: the search box's visible hint is just underscores. TalkBack reads "Search apps" instead,
+    // while real hints like "Hidden apps" are read as they are.
+    private fun describeSearchForTalkBack(searchText: TextView) {
+        val spokenHint = getString(R.string.lite_search_apps)
+        ViewCompat.setAccessibilityDelegate(searchText, object : AccessibilityDelegateCompat() {
+            override fun onInitializeAccessibilityNodeInfo(host: View, info: AccessibilityNodeInfoCompat) {
+                super.onInitializeAccessibilityNodeInfo(host, info)
+                val visibleHint = (host as? TextView)?.hint?.toString().orEmpty()
+                if (visibleHint.isBlank() || visibleHint.trim().all { it == '_' })
+                    info.hintText = spokenHint
+            }
+        })
     }
 
     private fun initSearch() {

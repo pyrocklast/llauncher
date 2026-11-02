@@ -18,6 +18,7 @@ It installs as a separate app (`app.olauncher.lite`), so it can sit alongside th
 - Settings, menus and dialogs use Android's own Material 3 look, with Material You colours on Android 12 and later
 - Text size and the number of home apps are set with sliders, and text size follows Android's own font size
 - Long-pressing an app in the drawer opens a normal menu: Rename, Hide, App info, Uninstall
+- Long presses vibrate, the date follows your phone's language and date format, and TalkBack can read the search box
 - Returning home does less work: the app list is cached and refreshed only when apps change, home apps are checked in the background, and long press uses Android's own timing
 
 The home screen and app drawer keep Olauncher's minimal, text-only look.
