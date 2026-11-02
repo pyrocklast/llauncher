@@ -2,10 +2,30 @@
 <!-- Lite: strings added by this fork. Kept apart from upstream's strings.xml so merges stay clean.
      Only English and French are provided; other languages fall back to English. -->
 <resources xmlns:tools="http://schemas.android.com/tools" tools:ignore="MissingTranslation">
+    <!-- Settings screen -->
+    <string name="lite_settings_title">%1$s settings</string>
+    <string name="lite_navigate_back">Back</string>
+    <string name="lite_general">General</string>
+    <string name="lite_app_drawer">App drawer</string>
     <string name="lite_app_info">App info</string>
-    <string name="lite_align_bottom">Align apps to the bottom</string>
+    <string name="lite_version">Version %1$s</string>
+    <string name="lite_none">None</string>
+    <plurals name="lite_app_count">
+        <item quantity="one">%d app</item>
+        <item quantity="other">%d apps</item>
+    </plurals>
+    <string name="lite_date_and_time">Date and time</string>
+    <string name="lite_time_and_date">Time and date</string>
+    <string name="lite_alignment">Alignment</string>
+    <string name="lite_home_alignment">Home screen alignment</string>
     <string name="lite_drawer_alignment">App drawer alignment</string>
+    <string name="lite_align_bottom">Align apps to the bottom</string>
+    <string name="lite_show_status_bar">Show status bar</string>
+    <string name="lite_theme">Theme</string>
+    <string name="lite_text_size_hint">Applied on top of Android\'s own font size</string>
+    <string name="lite_set_as_home_first">Set %1$s as your Home app first</string>
     <string name="lite_swipe_left">Swipe left</string>
     <string name="lite_swipe_right">Swipe right</string>
+    <!-- App drawer -->
     <string name="lite_original_name">Original name</string>
 </resources>

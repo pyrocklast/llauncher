@@ -1,8 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="lite_settings_title">Paramètres de %1$s</string>
+    <string name="lite_navigate_back">Retour</string>
+    <string name="lite_general">Général</string>
+    <string name="lite_app_drawer">Tiroir d\'applis</string>
     <string name="lite_app_info">Infos sur l\'appli</string>
-    <string name="lite_align_bottom">Aligner les applis en bas</string>
+    <string name="lite_version">Version %1$s</string>
+    <string name="lite_none">Aucune</string>
+    <plurals name="lite_app_count">
+        <item quantity="one">%d appli</item>
+        <item quantity="other">%d applis</item>
+    </plurals>
+    <string name="lite_date_and_time">Date et heure</string>
+    <string name="lite_time_and_date">Heure et date</string>
+    <string name="lite_alignment">Alignement</string>
+    <string name="lite_home_alignment">Alignement de l\'écran d\'accueil</string>
     <string name="lite_drawer_alignment">Alignement du tiroir d\'applis</string>
+    <string name="lite_align_bottom">Aligner les applis en bas</string>
+    <string name="lite_show_status_bar">Afficher la barre d\'état</string>
+    <string name="lite_theme">Thème</string>
+    <string name="lite_text_size_hint">S\'ajoute à la taille de police d\'Android</string>
+    <string name="lite_set_as_home_first">Définissez d\'abord %1$s comme appli d\'accueil</string>
     <string name="lite_swipe_left">Balayer vers la gauche</string>
     <string name="lite_swipe_right">Balayer vers la droite</string>
     <string name="lite_original_name">Nom d\'origine</string>

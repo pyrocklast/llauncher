@@ -61,7 +61,9 @@ class MainActivity : AppCompatActivity() {
 
     override fun attachBaseContext(context: Context) {
         val newConfig = Configuration(context.resources.configuration)
-        newConfig.fontScale = Prefs(context).textSizeScale
+        // Lite: the launcher's text size is relative to Android's own font size, so raising that
+        // for the whole phone enlarges the launcher too. Upstream replaced Android's size instead.
+        newConfig.fontScale = context.resources.configuration.fontScale * Prefs(context).textSizeScale
         applyOverrideConfiguration(newConfig)
         super.attachBaseContext(context)
     }
@@ -172,7 +174,9 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStop() {
         isResumed = false
-        backToHomeScreen()
+        // Lite: not while the activity is only being recreated (theme, text size, bold font, rotation),
+        // so you stay on the settings screen instead of being sent home
+        if (!isChangingConfigurations) backToHomeScreen()
         super.onStop()
     }
 

@@ -4,13 +4,20 @@ import android.animation.Animator
 import android.animation.ValueAnimator
 import android.os.Bundle
 import android.os.Process
+import android.util.TypedValue
 import android.view.Gravity
+import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
+import android.widget.FrameLayout
 import android.widget.Toast
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.bundleOf
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePadding
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
 import androidx.preference.Preference
@@ -23,6 +30,8 @@ import app.olauncher.MainViewModel
 import app.olauncher.R
 import app.olauncher.data.Constants
 import app.olauncher.data.Prefs
+import app.olauncher.databinding.DialogLiteTextSizeBinding
+import app.olauncher.databinding.FragmentLiteSettingsBinding
 import app.olauncher.helper.dpToPx
 import app.olauncher.helper.hideStatusBar
 import app.olauncher.helper.isEinkDisplay
@@ -32,13 +41,13 @@ import app.olauncher.helper.openAppInfo
 import app.olauncher.helper.showRespectingStatusBar
 import app.olauncher.helper.showStatusBar
 import app.olauncher.helper.showToast
-import com.google.android.material.color.MaterialColors
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import java.text.NumberFormat
 import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /**
- * Lite: settings as a stock Android preference screen.
+ * Lite: settings as a stock Android preference screen, under a large title bar.
  *
  * Values still live in [Prefs], exactly as upstream stores them. The preferences here are not
  * persisted themselves; they show the current value and write changes back through [Prefs].
@@ -48,8 +57,10 @@ class SettingsFragment : PreferenceFragmentCompat() {
     private lateinit var prefs: Prefs
     private lateinit var viewModel: MainViewModel
     private var dialog: AlertDialog? = null
+    private var frame: FragmentLiteSettingsBinding? = null
 
     private lateinit var defaultLauncher: Preference
+    private lateinit var hiddenApps: Preference
     private lateinit var homeAppsNum: Preference
     private lateinit var dateTime: Preference
     private lateinit var homeAlignment: Preference
@@ -74,22 +85,22 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
         val screen = preferenceManager.createPreferenceScreen(preferenceManager.context)
 
-        screen.category(R.string.app_name).apply {
+        screen.category(R.string.lite_general).apply {
             defaultLauncher = item(R.string.set_as_default_launcher) { viewModel.resetLauncherLiveData.call() }
-            item(R.string.hidden_apps) { showHiddenApps() }
+            hiddenApps = item(R.string.hidden_apps) { showHiddenApps() }
             item(R.string.lite_app_info) {
                 openAppInfo(requireContext(), Process.myUserHandle(), BuildConfig.APPLICATION_ID)
-            }
+            }.summary = getString(R.string.lite_version, BuildConfig.VERSION_NAME)
         }
 
         screen.category(R.string.home_screen).apply {
             homeAppsNum = item(R.string.apps_on_home_screen) { showHomeAppsNumDialog() }
-            dateTime = item(R.string.show_date_time) { showDateTimeDialog() }
-            homeAlignment = item(R.string.home_layout_alignment) { showHomeAlignmentDialog() }
+            dateTime = item(R.string.lite_date_and_time) { showDateTimeDialog() }
+            homeAlignment = item(R.string.lite_alignment) { showHomeAlignmentDialog() }
             bottomAlignment = switch(R.string.lite_align_bottom, prefs.homeBottomAlignment) { checked ->
                 if (viewModel.isOlauncherDefault.value != true) {
                     requireContext().showToast(
-                        getString(R.string.please_set_olauncher_as_default_first),
+                        getString(R.string.lite_set_as_home_first, getString(R.string.app_name)),
                         Toast.LENGTH_LONG
                     )
                     false
@@ -99,25 +110,28 @@ class SettingsFragment : PreferenceFragmentCompat() {
                     true
                 }
             }
-            drawerAlignment = item(R.string.lite_drawer_alignment) { showDrawerAlignmentDialog() }
-        }
-
-        screen.category(R.string.appearance).apply {
-            appTheme = item(R.string.theme_mode) { showThemeDialog() }
-            textSize = item(R.string.text_size) { showTextSizeDialog() }
-            switch(R.string.bold_font, prefs.boldFont) { checked ->
-                prefs.boldFont = checked
-                requireActivity().recreate()
-                true
-            }
-            switch(R.string.notification_bar, prefs.showStatusBar) { checked ->
+            switch(R.string.lite_show_status_bar, prefs.showStatusBar) { checked ->
                 prefs.showStatusBar = checked
                 if (checked) requireActivity().window.showStatusBar()
                 else requireActivity().window.hideStatusBar()
                 true
             }
+        }
+
+        screen.category(R.string.lite_app_drawer).apply {
+            drawerAlignment = item(R.string.lite_alignment) { showDrawerAlignmentDialog() }
             switch(R.string.auto_show_keyboard, prefs.autoShowKeyboard) { checked ->
                 prefs.autoShowKeyboard = checked
+                true
+            }
+        }
+
+        screen.category(R.string.appearance).apply {
+            appTheme = item(R.string.lite_theme) { showThemeDialog() }
+            textSize = item(R.string.text_size) { showTextSizeDialog() }
+            switch(R.string.bold_font, prefs.boldFont) { checked ->
+                prefs.boldFont = checked
+                requireActivity().recreate()
                 true
             }
         }
@@ -143,21 +157,37 @@ class SettingsFragment : PreferenceFragmentCompat() {
         preferenceScreen = screen
     }
 
+    // Puts the preference list under the title bar from fragment_lite_settings.xml
+    override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
+        val list = super.onCreateView(inflater, container, savedInstanceState)
+        val binding = FragmentLiteSettingsBinding.inflate(inflater, container, false)
+        binding.settingsContent.addView(
+            list,
+            FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT)
+        )
+        frame = binding
+        return binding.root
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        // The launcher window is transparent so the wallpaper shows through; settings need a background
-        view.setBackgroundColor(MaterialColors.getColor(view, android.R.attr.colorBackground))
-        // The window draws behind the system bars, so keep the list clear of them
-        listView.setPadding(0, 64.dpToPx(), 0, 64.dpToPx())
-        listView.clipToPadding = false
+        frame?.let { frame ->
+            // Names the app, since an accidental long press on the home screen can land you here
+            frame.collapsingToolbar.title = getString(R.string.lite_settings_title, getString(R.string.app_name))
+            frame.toolbar.setNavigationOnClickListener { findNavController().popBackStack() }
+            listView.clipToPadding = false
+            keepClearOfSystemBars(frame)
+        }
 
         // Upstream uses this flag to hide the first-run tips on the home screen
         prefs.firstSettingsOpen = false
         viewModel.isOlauncherDefault()
+        viewModel.getHiddenApps()
 
         viewModel.isOlauncherDefault.observe(viewLifecycleOwner) { refreshSummaries() }
         viewModel.homeAppAlignment.observe(viewLifecycleOwner) { refreshSummaries() }
         viewModel.updateSwipeApps.observe(viewLifecycleOwner) { refreshSummaries() }
+        viewModel.hiddenApps.observe(viewLifecycleOwner) { refreshSummaries() }
         refreshSummaries()
     }
 
@@ -171,7 +201,25 @@ class SettingsFragment : PreferenceFragmentCompat() {
     override fun onDestroyView() {
         dialog?.dismiss()
         dialog = null
+        frame = null
         super.onDestroyView()
+    }
+
+    // The launcher window draws behind the status and navigation bars, so keep the title bar and the
+    // last rows clear of them. Falls back to fixed spacing if the system reports no insets.
+    private fun keepClearOfSystemBars(frame: FragmentLiteSettingsBinding) {
+        ViewCompat.setOnApplyWindowInsetsListener(frame.root) { _, insets ->
+            val top = maxOf(
+                insets.getInsets(WindowInsetsCompat.Type.statusBars() or WindowInsetsCompat.Type.displayCutout()).top,
+                // Leave room for the status bar even while it's hidden, so nothing jumps when it shows
+                insets.getInsetsIgnoringVisibility(WindowInsetsCompat.Type.statusBars()).top,
+            )
+            val bottom = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom
+            frame.appBar.updatePadding(top = if (top > 0) top else 32.dpToPx())
+            listView.updatePadding(bottom = if (bottom > 0) bottom + 16.dpToPx() else 64.dpToPx())
+            insets
+        }
+        ViewCompat.requestApplyInsets(frame.root)
     }
 
     private fun refreshSummaries() {
@@ -179,13 +227,17 @@ class SettingsFragment : PreferenceFragmentCompat() {
             if (viewModel.isOlauncherDefault.value == true) R.string.change_default_launcher
             else R.string.set_as_default_launcher
         )
+        hiddenApps.summary = viewModel.hiddenApps.value?.size?.let { count ->
+            if (count == 0) getString(R.string.lite_none)
+            else resources.getQuantityString(R.plurals.lite_app_count, count, count)
+        }
         homeAppsNum.summary = prefs.homeAppsNum.toString()
         dateTime.summary = getString(dateTimeLabel(prefs.dateTimeVisibility))
         homeAlignment.summary = getString(alignmentLabel(prefs.homeAlignment))
         bottomAlignment.isChecked = prefs.homeBottomAlignment
         drawerAlignment.summary = getString(alignmentLabel(prefs.appLabelAlignment))
         appTheme.summary = getString(themeLabel(prefs.appTheme))
-        textSize.summary = formatScale(prefs.textSizeScale)
+        textSize.summary = formatPercent(prefs.textSizeScale)
         swipeLeftApp.summary = prefs.appNameSwipeLeft
         swipeRightApp.summary = prefs.appNameSwipeRight
     }
@@ -203,7 +255,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
     private fun showDateTimeDialog() {
         val labels = labelsFor(dateTimeOptions) { dateTimeLabel(it) }
-        showChoiceDialog(R.string.show_date_time, labels, dateTimeOptions.indexOf(prefs.dateTimeVisibility)) { which ->
+        showChoiceDialog(R.string.lite_date_and_time, labels, dateTimeOptions.indexOf(prefs.dateTimeVisibility)) { which ->
             prefs.dateTimeVisibility = dateTimeOptions[which]
             viewModel.toggleDateTime()
             refreshSummaries()
@@ -212,7 +264,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
     private fun showHomeAlignmentDialog() {
         val labels = labelsFor(alignments) { alignmentLabel(it) }
-        showChoiceDialog(R.string.home_layout_alignment, labels, alignments.indexOf(prefs.homeAlignment)) { which ->
+        showChoiceDialog(R.string.lite_home_alignment, labels, alignments.indexOf(prefs.homeAlignment)) { which ->
             viewModel.updateHomeAlignment(alignments[which])
             refreshSummaries()
         }
@@ -228,7 +280,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
     private fun showThemeDialog() {
         val labels = labelsFor(themeOptions) { themeLabel(it) }
-        showChoiceDialog(R.string.theme_mode, labels, themeOptions.indexOf(prefs.appTheme)) { which ->
+        showChoiceDialog(R.string.lite_theme, labels, themeOptions.indexOf(prefs.appTheme)) { which ->
             val theme = themeOptions[which]
             prefs.appTheme = theme
             refreshSummaries()
@@ -237,19 +289,49 @@ class SettingsFragment : PreferenceFragmentCompat() {
         }
     }
 
+    // Lite: a slider in percent of Android's own font size, with a preview of your home apps.
+    // MainActivity multiplies Android's font scale by this when it (re)creates.
     private fun showTextSizeDialog() {
-        val maxScale = if (isTablet(requireContext())) 2.0f else 1.5f
-        val steps = ((maxScale - 0.5f) * 10).roundToInt()
-        val scales = FloatArray(steps + 1) { (5 + it) / 10f }
-        val labels = Array<CharSequence>(scales.size) { formatScale(scales[it]) }
-        val current = scales.indexOfFirst { abs(it - prefs.textSizeScale) < 0.01f }
-        showChoiceDialog(R.string.text_size, labels, current) { which ->
-            if (abs(scales[which] - prefs.textSizeScale) >= 0.01f) {
-                prefs.textSizeScale = scales[which]
-                // MainActivity applies the scale as the font scale when it is recreated
-                requireActivity().recreate()
-            }
+        val sizeBinding = DialogLiteTextSizeBinding.inflate(layoutInflater)
+        val preview = sizeBinding.textSizePreview
+        val slider = sizeBinding.textSizeSlider
+        val maxPercent = if (isTablet(requireContext())) 200 else 150
+
+        preview.text = previewText()
+        // The preview starts at the current size; this is its size at 100%
+        val previewPxAt100 = preview.textSize / prefs.textSizeScale
+
+        slider.valueTo = maxPercent.toFloat()
+        slider.value = ((prefs.textSizeScale * 10).roundToInt() * 10).coerceIn(50, maxPercent).toFloat()
+        slider.setLabelFormatter { value -> formatPercent(value / 100f) }
+        slider.addOnChangeListener { _, value, _ ->
+            preview.setTextSize(TypedValue.COMPLEX_UNIT_PX, previewPxAt100 * value / 100f)
         }
+        preview.setTextSize(TypedValue.COMPLEX_UNIT_PX, previewPxAt100 * slider.value / 100f)
+
+        dialog?.dismiss()
+        dialog = MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.text_size)
+            .setView(sizeBinding.root)
+            .setPositiveButton(R.string.okay) { _, _ ->
+                val scale = slider.value / 100f
+                if (abs(scale - prefs.textSizeScale) >= 0.01f) {
+                    prefs.textSizeScale = scale
+                    requireActivity().recreate()
+                }
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .create()
+            .showRespectingStatusBar()
+    }
+
+    // Up to three of your home apps, or the app's name when none are set
+    private fun previewText(): String {
+        val names = (1..prefs.homeAppsNum.coerceAtMost(8))
+            .map { prefs.getAppName(it) }
+            .filter { it.isNotBlank() }
+            .take(3)
+        return names.ifEmpty { listOf(getString(R.string.app_name)) }.joinToString("\n")
     }
 
     private fun showChoiceDialog(
@@ -273,7 +355,8 @@ class SettingsFragment : PreferenceFragmentCompat() {
     // Navigation
 
     private fun showHiddenApps() {
-        if (prefs.hiddenApps.isEmpty()) {
+        val count = viewModel.hiddenApps.value?.size ?: prefs.hiddenApps.size
+        if (count == 0) {
             requireContext().showToast(getString(R.string.no_hidden_apps))
             return
         }
@@ -306,7 +389,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
     @StringRes
     private fun dateTimeLabel(visibility: Int): Int = when (visibility) {
-        Constants.DateTime.ON -> R.string.on
+        Constants.DateTime.ON -> R.string.lite_time_and_date
         Constants.DateTime.DATE_ONLY -> R.string.date_only
         else -> R.string.off
     }
@@ -318,7 +401,8 @@ class SettingsFragment : PreferenceFragmentCompat() {
         else -> R.string.system_default
     }
 
-    private fun formatScale(scale: Float): String = String.format("%.1f", scale)
+    // e.g. "110%", in your language's format
+    private fun formatPercent(scale: Float): String = NumberFormat.getPercentInstance().format(scale.toDouble())
 
     // Preference builders. Every preference is non-persistent: Prefs stays the single source of truth.
 
