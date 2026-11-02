@@ -16,6 +16,7 @@ A personal fork of [Olauncher](https://github.com/tanujnotes/Olauncher) with eve
 
 - **Native look for menus, dialogs and settings**: the app uses Android's Material 3 theme, with Material You colours from your wallpaper on Android 12 and later.
   - Settings is a standard Android settings screen titled "Olauncher Lite settings", with a large title bar that shrinks as you scroll and a back arrow. It's grouped into General, Home screen, App drawer, Appearance and Gestures, with switches and choice dialogs. Hidden apps (with a count), drawer alignment and the System theme have their own rows instead of hidden taps and long presses, and App info shows the version.
+  - The number of apps on the home screen is a slider from 0 to 8.
   - Text size is a slider with a preview of your home apps. It's relative to Android's own font size, so raising that for the whole phone enlarges the launcher too.
   - Changing the theme, text size or bold font keeps you on the settings screen instead of sending you home.
   - Long-pressing an app in the drawer opens a normal pop-up menu (Rename, Hide, App info, Uninstall). Rename opens a dialog, with a button to restore the original name.

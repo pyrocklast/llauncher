@@ -30,6 +30,7 @@ import app.olauncher.MainViewModel
 import app.olauncher.R
 import app.olauncher.data.Constants
 import app.olauncher.data.Prefs
+import app.olauncher.databinding.DialogLiteHomeAppsBinding
 import app.olauncher.databinding.DialogLiteTextSizeBinding
 import app.olauncher.databinding.FragmentLiteSettingsBinding
 import app.olauncher.helper.dpToPx
@@ -244,13 +245,34 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
     // Choice dialogs
 
+    // Lite: a slider from 0 to 8, like text size, instead of a list of nine numbers
     private fun showHomeAppsNumDialog() {
-        val labels = Array<CharSequence>(9) { it.toString() }
-        showChoiceDialog(R.string.apps_on_home_screen, labels, prefs.homeAppsNum) { which ->
-            prefs.homeAppsNum = which
-            viewModel.refreshHome(true)
-            refreshSummaries()
+        val countBinding = DialogLiteHomeAppsBinding.inflate(layoutInflater)
+        val slider = countBinding.homeAppsSlider
+        val showCount = { count: Int ->
+            countBinding.homeAppsCount.text = resources.getQuantityString(R.plurals.lite_app_count, count, count)
         }
+
+        slider.value = prefs.homeAppsNum.coerceIn(0, 8).toFloat()
+        slider.setLabelFormatter { value -> value.roundToInt().toString() }
+        slider.addOnChangeListener { _, value, _ -> showCount(value.roundToInt()) }
+        showCount(slider.value.roundToInt())
+
+        dialog?.dismiss()
+        dialog = MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.apps_on_home_screen)
+            .setView(countBinding.root)
+            .setPositiveButton(R.string.okay) { _, _ ->
+                val count = slider.value.roundToInt()
+                if (count != prefs.homeAppsNum) {
+                    prefs.homeAppsNum = count
+                    viewModel.refreshHome(true)
+                    refreshSummaries()
+                }
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .create()
+            .showRespectingStatusBar()
     }
 
     private fun showDateTimeDialog() {
