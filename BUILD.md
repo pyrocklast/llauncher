@@ -17,8 +17,11 @@ A personal fork of [Olauncher](https://github.com/tanujnotes/Olauncher) with eve
 - **Native look for menus, dialogs and settings**: the app uses Android's Material 3 theme, with Material You colours from your wallpaper on Android 12 and later.
   - Settings is a standard Android settings screen titled "Olauncher Lite settings", with a large title bar that shrinks as you scroll and a back arrow. It's grouped into General, Home screen, App drawer, Appearance and Gestures, with switches and choice dialogs. Hidden apps (with a count), drawer alignment and the System theme have their own rows instead of hidden taps and long presses, and App info shows the version.
   - The number of apps on the home screen is a slider right in the settings list, applied as you move it.
-  - Text size is a slider with a preview of your home apps. It's relative to Android's own font size, so raising that for the whole phone enlarges the launcher too.
-  - Changing the theme, text size or bold font keeps you on the settings screen instead of sending you home.
+  - App name size is a slider with a preview of your home apps. It applies only to app names (home screen, drawer and its search box), not to settings or menus.
+  - Clock and date size is a separate slider, previewed with the live time and date.
+  - Both sizes are relative to Android's own font size, so raising that for the whole phone enlarges the launcher too.
+  - Date style: short ("lun. 2 nov.") or full ("lundi 2 novembre").
+  - Changing the theme or bold font keeps you on the settings screen instead of sending you home. Sizes apply without reloading anything.
   - Long-pressing an app in the drawer opens a normal pop-up menu (Rename, Hide, App info, Uninstall). Rename opens a dialog, with a button to restore the original name.
   - Messages use standard Material dialogs.
 - The home screen and the app drawer keep Olauncher's own minimal text style.

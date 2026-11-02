@@ -10,6 +10,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
+import android.widget.TextView
 import android.widget.Toast
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AlertDialog
@@ -17,6 +18,7 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.bundleOf
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.isVisible
 import androidx.core.view.updatePadding
 import androidx.lifecycle.ViewModelProvider
 import androidx.navigation.fragment.findNavController
@@ -29,10 +31,12 @@ import app.olauncher.BuildConfig
 import app.olauncher.MainViewModel
 import app.olauncher.R
 import app.olauncher.data.Constants
+import app.olauncher.data.LitePrefs
 import app.olauncher.data.Prefs
 import app.olauncher.databinding.DialogLiteTextSizeBinding
 import app.olauncher.databinding.FragmentLiteSettingsBinding
 import app.olauncher.helper.dpToPx
+import app.olauncher.helper.formatHomeDate
 import app.olauncher.helper.hideStatusBar
 import app.olauncher.helper.isEinkDisplay
 import app.olauncher.helper.isSystemAnimationsDisabled
@@ -55,6 +59,7 @@ import kotlin.math.roundToInt
 class SettingsFragment : PreferenceFragmentCompat() {
 
     private lateinit var prefs: Prefs
+    private lateinit var litePrefs: LitePrefs
     private lateinit var viewModel: MainViewModel
     private var dialog: AlertDialog? = null
     private var frame: FragmentLiteSettingsBinding? = null
@@ -63,11 +68,13 @@ class SettingsFragment : PreferenceFragmentCompat() {
     private lateinit var hiddenApps: Preference
     private lateinit var homeAppsNum: SliderPreference
     private lateinit var dateTime: Preference
+    private lateinit var dateStyle: Preference
     private lateinit var homeAlignment: Preference
     private lateinit var bottomAlignment: SwitchPreferenceCompat
     private lateinit var drawerAlignment: Preference
     private lateinit var appTheme: Preference
     private lateinit var textSize: Preference
+    private lateinit var clockSize: Preference
     private lateinit var swipeLeftApp: Preference
     private lateinit var swipeRightApp: Preference
 
@@ -81,6 +88,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         prefs = Prefs(requireContext())
+        litePrefs = LitePrefs(requireContext())
         viewModel = ViewModelProvider(requireActivity())[MainViewModel::class.java]
 
         val screen = preferenceManager.createPreferenceScreen(preferenceManager.context)
@@ -101,6 +109,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
             }
             homeAppsNum.formatValue = { count -> resources.getQuantityString(R.plurals.lite_app_count, count, count) }
             dateTime = item(R.string.lite_date_and_time) { showDateTimeDialog() }
+            dateStyle = item(R.string.lite_date_style) { showDateStyleDialog() }
             homeAlignment = item(R.string.lite_alignment) { showHomeAlignmentDialog() }
             bottomAlignment = switch(R.string.lite_align_bottom, prefs.homeBottomAlignment) { checked ->
                 if (viewModel.isOlauncherDefault.value != true) {
@@ -133,7 +142,8 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
         screen.category(R.string.appearance).apply {
             appTheme = item(R.string.lite_theme) { showThemeDialog() }
-            textSize = item(R.string.text_size) { showTextSizeDialog() }
+            textSize = item(R.string.lite_app_name_size) { showAppNameSizeDialog() }
+            clockSize = item(R.string.lite_clock_size) { showClockSizeDialog() }
             switch(R.string.bold_font, prefs.boldFont) { checked ->
                 prefs.boldFont = checked
                 requireActivity().recreate()
@@ -238,6 +248,11 @@ class SettingsFragment : PreferenceFragmentCompat() {
         }
         homeAppsNum.value = prefs.homeAppsNum
         dateTime.summary = getString(dateTimeLabel(prefs.dateTimeVisibility))
+        val dateShown = Constants.DateTime.isDateVisible(prefs.dateTimeVisibility)
+        dateStyle.summary = requireContext().formatHomeDate(litePrefs.longDate)
+        dateStyle.isEnabled = dateShown
+        clockSize.summary = formatPercent(litePrefs.clockScale)
+        clockSize.isEnabled = prefs.dateTimeVisibility != Constants.DateTime.OFF
         homeAlignment.summary = getString(alignmentLabel(prefs.homeAlignment))
         bottomAlignment.isChecked = prefs.homeBottomAlignment
         drawerAlignment.summary = getString(alignmentLabel(prefs.appLabelAlignment))
@@ -254,6 +269,18 @@ class SettingsFragment : PreferenceFragmentCompat() {
         showChoiceDialog(R.string.lite_date_and_time, labels, dateTimeOptions.indexOf(prefs.dateTimeVisibility)) { which ->
             prefs.dateTimeVisibility = dateTimeOptions[which]
             viewModel.toggleDateTime()
+            refreshSummaries()
+        }
+    }
+
+    // Lite: short or full date, each shown as today's date in the language the home screen uses
+    private fun showDateStyleDialog() {
+        val labels = arrayOf<CharSequence>(
+            requireContext().formatHomeDate(long = false),
+            requireContext().formatHomeDate(long = true),
+        )
+        showChoiceDialog(R.string.lite_date_style, labels, if (litePrefs.longDate) 1 else 0) { which ->
+            litePrefs.longDate = which == 1
             refreshSummaries()
         }
     }
@@ -285,36 +312,70 @@ class SettingsFragment : PreferenceFragmentCompat() {
         }
     }
 
-    // Lite: a slider in percent of Android's own font size, with a preview of your home apps.
-    // MainActivity multiplies Android's font scale by this when it (re)creates.
-    private fun showTextSizeDialog() {
+    // Lite: app names only (home screen, drawer and its search box), with a preview of your home apps.
+    // Settings and dialogs keep Android's own font size.
+    private fun showAppNameSizeDialog() = showSizeDialog(
+        R.string.lite_app_name_size,
+        prefs.textSizeScale,
+        previews = { sizeBinding ->
+            sizeBinding.textSizePreview.text = previewText()
+            listOf(sizeBinding.textSizePreview)
+        },
+    ) { scale ->
+        prefs.textSizeScale = scale
+        refreshSummaries()
+    }
+
+    // Lite: the clock and date on the home screen, previewed with the current time and date
+    private fun showClockSizeDialog() = showSizeDialog(
+        R.string.lite_clock_size,
+        litePrefs.clockScale,
+        previews = { sizeBinding ->
+            sizeBinding.textSizePreview.isVisible = false
+            // A live clock with the home screen's format, so the preview shows the real time
+            sizeBinding.clockPreview.isVisible = true
+            sizeBinding.datePreview.isVisible = true
+            sizeBinding.datePreview.text = requireContext().formatHomeDate(litePrefs.longDate)
+            listOf(sizeBinding.clockPreview, sizeBinding.datePreview)
+        },
+    ) { scale ->
+        litePrefs.clockScale = scale
+        refreshSummaries()
+    }
+
+    /**
+     * A size slider in percent of Android's own font size, with a live preview. [previews] fills
+     * in the preview lines and returns them; their layout sizes count as 100%. Nothing needs
+     * reloading: the home screen and drawer apply sizes when they're next shown.
+     */
+    private fun showSizeDialog(
+        @StringRes title: Int,
+        currentScale: Float,
+        previews: (DialogLiteTextSizeBinding) -> List<TextView>,
+        onApply: (Float) -> Unit,
+    ) {
         val sizeBinding = DialogLiteTextSizeBinding.inflate(layoutInflater)
-        val preview = sizeBinding.textSizePreview
+        val lines = previews(sizeBinding)
+        val pxAt100 = lines.map { it.textSize }
         val slider = sizeBinding.textSizeSlider
         val maxPercent = if (isTablet(requireContext())) 200 else 150
 
-        preview.text = previewText()
-        // The preview starts at the current size; this is its size at 100%
-        val previewPxAt100 = preview.textSize / prefs.textSizeScale
-
-        slider.valueTo = maxPercent.toFloat()
-        slider.value = ((prefs.textSizeScale * 10).roundToInt() * 10).coerceIn(50, maxPercent).toFloat()
-        slider.setLabelFormatter { value -> formatPercent(value / 100f) }
-        slider.addOnChangeListener { _, value, _ ->
-            preview.setTextSize(TypedValue.COMPLEX_UNIT_PX, previewPxAt100 * value / 100f)
+        val showPreview = { percent: Float ->
+            lines.forEachIndexed { i, line -> line.setTextSize(TypedValue.COMPLEX_UNIT_PX, pxAt100[i] * percent / 100f) }
         }
-        preview.setTextSize(TypedValue.COMPLEX_UNIT_PX, previewPxAt100 * slider.value / 100f)
+        slider.valueTo = maxPercent.toFloat()
+        slider.value = ((currentScale * 10).roundToInt() * 10).coerceIn(50, maxPercent).toFloat()
+        slider.setLabelFormatter { value -> formatPercent(value / 100f) }
+        slider.addOnChangeListener { _, value, _ -> showPreview(value) }
+        showPreview(slider.value)
 
         dialog?.dismiss()
         dialog = MaterialAlertDialogBuilder(requireContext())
-            .setTitle(R.string.text_size)
+            .setTitle(title)
             .setView(sizeBinding.root)
             .setPositiveButton(R.string.okay) { _, _ ->
                 val scale = slider.value / 100f
-                if (abs(scale - prefs.textSizeScale) >= 0.01f) {
-                    prefs.textSizeScale = scale
-                    requireActivity().recreate()
-                }
+                if (abs(scale - currentScale) >= 0.01f) onApply(scale)
             }
             .setNegativeButton(android.R.string.cancel, null)
             .create()

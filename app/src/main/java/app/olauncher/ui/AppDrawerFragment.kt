@@ -40,6 +40,7 @@ import app.olauncher.helper.isEinkDisplay
 import app.olauncher.helper.isSystemAnimationsDisabled
 import app.olauncher.helper.isSystemApp
 import app.olauncher.helper.openAppInfo
+import app.olauncher.helper.scaleTextSize
 import app.olauncher.helper.showKeyboard
 import app.olauncher.helper.showPopupMenu
 import app.olauncher.helper.showToast
@@ -98,6 +99,8 @@ class AppDrawerFragment : BaseFragment() {
         try {
             searchTextView = binding.search.findViewById(R.id.search_src_text)
             searchTextView?.gravity = prefs.appLabelAlignment
+            // Lite: what you type is shown at the same size as the app names
+            searchTextView?.scaleTextSize(prefs.textSizeScale)
             searchTextView?.let { describeSearchForTalkBack(it) }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -172,6 +175,7 @@ class AppDrawerFragment : BaseFragment() {
         adapter = AppDrawerAdapter(
             flag,
             prefs.appLabelAlignment,
+            prefs.textSizeScale,
             appClickListener = { appModel ->
                 viewModel.selectedApp(appModel, flag)
                 if (flag == Constants.FLAG_LAUNCH_APP || flag == Constants.FLAG_HIDDEN_APPS)

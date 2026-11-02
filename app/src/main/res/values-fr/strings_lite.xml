@@ -12,6 +12,9 @@
         <item quantity="other">%d applis</item>
     </plurals>
     <string name="lite_date_and_time">Date et heure</string>
+    <string name="lite_date_style">Format de la date</string>
+    <string name="lite_app_name_size">Taille des noms d\'applis</string>
+    <string name="lite_clock_size">Taille de l\'heure et de la date</string>
     <string name="lite_time_and_date">Heure et date</string>
     <string name="lite_alignment">Alignement</string>
     <string name="lite_home_alignment">Alignement de l\'écran d\'accueil</string>

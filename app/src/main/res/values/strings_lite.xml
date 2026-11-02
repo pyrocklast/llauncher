@@ -15,6 +15,9 @@
         <item quantity="other">%d apps</item>
     </plurals>
     <string name="lite_date_and_time">Date and time</string>
+    <string name="lite_date_style">Date style</string>
+    <string name="lite_app_name_size">App name size</string>
+    <string name="lite_clock_size">Clock and date size</string>
     <string name="lite_time_and_date">Time and date</string>
     <string name="lite_alignment">Alignment</string>
     <string name="lite_home_alignment">Home screen alignment</string>

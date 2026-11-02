@@ -59,14 +59,9 @@ class MainActivity : AppCompatActivity() {
 //            super.onBackPressed()
 //    }
 
-    override fun attachBaseContext(context: Context) {
-        val newConfig = Configuration(context.resources.configuration)
-        // Lite: the launcher's text size is relative to Android's own font size, so raising that
-        // for the whole phone enlarges the launcher too. Upstream replaced Android's size instead.
-        newConfig.fontScale = context.resources.configuration.fontScale * Prefs(context).textSizeScale
-        applyOverrideConfiguration(newConfig)
-        super.attachBaseContext(context)
-    }
+    // Lite: no app-wide font size override. Upstream replaced Android's font size for the whole
+    // launcher, settings included. Here the text size applies only to app names, and the clock size
+    // only to the clock and date, each on top of Android's font size (see HomeFragment, the drawer).
 
     override fun onCreate(savedInstanceState: Bundle?) {
         prefs = Prefs(this)

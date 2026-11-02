@@ -1,8 +1,6 @@
 package app.olauncher.ui
 
-import android.app.LocaleManager
 import android.content.Context
-import android.content.res.Resources
 import android.os.BatteryManager
 import android.os.Build
 import android.os.Bundle
@@ -20,20 +18,22 @@ import app.olauncher.MainViewModel
 import app.olauncher.R
 import app.olauncher.data.AppModel
 import app.olauncher.data.Constants
+import app.olauncher.data.LitePrefs
 import app.olauncher.data.Prefs
 import app.olauncher.databinding.FragmentHomeBinding
 import app.olauncher.helper.expandNotificationDrawer
+import app.olauncher.helper.dateLocale
+import app.olauncher.helper.formatHomeDate
 import app.olauncher.helper.getUserHandleFromString
 import app.olauncher.helper.openAlarmApp
 import app.olauncher.helper.openCalendar
 import app.olauncher.helper.openCameraApp
 import app.olauncher.helper.openDialerApp
+import app.olauncher.helper.scaleTextSize
 import app.olauncher.helper.showToast
 import app.olauncher.listener.OnSwipeTouchListener
 import app.olauncher.listener.ViewSwipeTouchListener
 import java.text.NumberFormat
-import java.text.SimpleDateFormat
-import java.util.Date
 
 class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListener {
 
@@ -59,6 +59,19 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
         setHomeAlignment(prefs.homeAlignment)
         initSwipeTouchListener()
         initClickListeners()
+        applyTextSizes()
+    }
+
+    // Lite: the app name size applies to the home apps only, and the clock size to the clock and
+    // date only. The view is rebuilt each time you come back from settings, so changes show then.
+    private fun applyTextSizes() {
+        listOf(
+            binding.homeApp1, binding.homeApp2, binding.homeApp3, binding.homeApp4,
+            binding.homeApp5, binding.homeApp6, binding.homeApp7, binding.homeApp8,
+        ).forEach { it.scaleTextSize(prefs.textSizeScale) }
+        val clockScale = LitePrefs(requireContext()).clockScale
+        binding.clock.scaleTextSize(clockScale)
+        binding.date.scaleTextSize(clockScale)
     }
 
     override fun onResume() {
@@ -239,16 +252,10 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
         binding.date.isVisible = Constants.DateTime.isDateVisible(prefs.dateTimeVisibility)
 
         // Lite: the date uses the language chosen for this app in Android's settings (Android 13+),
-        // or the phone's language when none is chosen, each in its usual format: e.g. "lun. 2 nov."
-        // in French, "Mon 2 Nov" in British English, "Mon, Nov 2" in American English.
-        // Upstream used English word order for every language.
-        val appLocales = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
-            requireContext().getSystemService(LocaleManager::class.java)?.applicationLocales
-        else null
-        val dateLocale = if (appLocales != null && !appLocales.isEmpty) appLocales[0]
-        else Resources.getSystem().configuration.locales[0]
-        val pattern = android.text.format.DateFormat.getBestDateTimePattern(dateLocale, "EEEdMMM")
-        var dateText = SimpleDateFormat(pattern, dateLocale).format(Date())
+        // or the phone's language when none is chosen, in its usual format, short or full:
+        // e.g. "lun. 2 nov." or "lundi 2 novembre". Upstream used English word order for every language.
+        val dateLocale = requireContext().dateLocale()
+        var dateText = requireContext().formatHomeDate(LitePrefs(requireContext()).longDate)
 
         if (!prefs.showStatusBar) {
             val battery = (requireContext().getSystemService(Context.BATTERY_SERVICE) as BatteryManager)

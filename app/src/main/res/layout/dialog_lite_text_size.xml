@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Lite: text size dialog. The preview shows your home apps at the size the slider is on. -->
+<!-- Lite: size dialog. The preview shows your home apps, or the clock and date, at the size the
+     slider is on. Their sizes here match the home screen's at 100%. -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
@@ -17,6 +18,30 @@
         android:maxLines="3"
         android:shadowRadius="0"
         android:textColor="?attr/colorOnSurface" />
+
+    <TextClock
+        android:id="@+id/clockPreview"
+        style="@style/TextDefault"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fontFamily="sans-serif-light"
+        android:format12Hour="h:mm"
+        android:maxLines="1"
+        android:shadowRadius="0"
+        android:textColor="?attr/colorOnSurface"
+        android:textSize="@dimen/time_size"
+        android:visibility="gone" />
+
+    <TextView
+        android:id="@+id/datePreview"
+        style="@style/TextDefault"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="3dp"
+        android:shadowRadius="0"
+        android:textColor="?attr/colorOnSurface"
+        android:textSize="@dimen/date_size"
+        android:visibility="gone" />
 
     <TextView
         android:id="@+id/textSizeHint"

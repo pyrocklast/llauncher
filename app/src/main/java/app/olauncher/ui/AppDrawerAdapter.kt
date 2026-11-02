@@ -15,10 +15,13 @@ import app.olauncher.data.Constants
 import app.olauncher.databinding.AdapterAppDrawerBinding
 import app.olauncher.databinding.AdapterPrivateSpaceHeaderBinding
 import app.olauncher.helper.appLabelMatches
+import app.olauncher.helper.scaleTextSize
 
 class AppDrawerAdapter(
     private var flag: Int,
     private val appLabelGravity: Int,
+    // Lite: the app name size from settings, applied once to each row as it's created
+    private val appNameScale: Float,
     private val appClickListener: (AppModel) -> Unit,
     // Lite: long press opens a stock popup menu, built by the fragment and anchored to the row
     private val appMenuListener: (AppModel, View) -> Unit,
@@ -71,7 +74,7 @@ class AppDrawerAdapter(
                     LayoutInflater.from(parent.context),
                     parent,
                     false
-                )
+                ).also { it.privateSpaceTitle.scaleTextSize(appNameScale) }
             )
 
             else -> ViewHolder(
@@ -79,7 +82,7 @@ class AppDrawerAdapter(
                     LayoutInflater.from(parent.context),
                     parent,
                     false
-                )
+                ).also { it.appTitle.scaleTextSize(appNameScale) }
             )
         }
     }
