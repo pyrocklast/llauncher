@@ -30,7 +30,6 @@ import app.olauncher.MainViewModel
 import app.olauncher.R
 import app.olauncher.data.Constants
 import app.olauncher.data.Prefs
-import app.olauncher.databinding.DialogLiteHomeAppsBinding
 import app.olauncher.databinding.DialogLiteTextSizeBinding
 import app.olauncher.databinding.FragmentLiteSettingsBinding
 import app.olauncher.helper.dpToPx
@@ -62,7 +61,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
 
     private lateinit var defaultLauncher: Preference
     private lateinit var hiddenApps: Preference
-    private lateinit var homeAppsNum: Preference
+    private lateinit var homeAppsNum: SliderPreference
     private lateinit var dateTime: Preference
     private lateinit var homeAlignment: Preference
     private lateinit var bottomAlignment: SwitchPreferenceCompat
@@ -95,7 +94,12 @@ class SettingsFragment : PreferenceFragmentCompat() {
         }
 
         screen.category(R.string.home_screen).apply {
-            homeAppsNum = item(R.string.apps_on_home_screen) { showHomeAppsNumDialog() }
+            // Inline slider, applied as you move it: changing the count is cheap and easy to undo
+            homeAppsNum = slider(R.string.apps_on_home_screen, valueFrom = 0, valueTo = 8, value = prefs.homeAppsNum) { count ->
+                prefs.homeAppsNum = count
+                viewModel.refreshHome(true)
+            }
+            homeAppsNum.formatValue = { count -> resources.getQuantityString(R.plurals.lite_app_count, count, count) }
             dateTime = item(R.string.lite_date_and_time) { showDateTimeDialog() }
             homeAlignment = item(R.string.lite_alignment) { showHomeAlignmentDialog() }
             bottomAlignment = switch(R.string.lite_align_bottom, prefs.homeBottomAlignment) { checked ->
@@ -232,7 +236,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
             if (count == 0) getString(R.string.lite_none)
             else resources.getQuantityString(R.plurals.lite_app_count, count, count)
         }
-        homeAppsNum.summary = prefs.homeAppsNum.toString()
+        homeAppsNum.value = prefs.homeAppsNum
         dateTime.summary = getString(dateTimeLabel(prefs.dateTimeVisibility))
         homeAlignment.summary = getString(alignmentLabel(prefs.homeAlignment))
         bottomAlignment.isChecked = prefs.homeBottomAlignment
@@ -244,36 +248,6 @@ class SettingsFragment : PreferenceFragmentCompat() {
     }
 
     // Choice dialogs
-
-    // Lite: a slider from 0 to 8, like text size, instead of a list of nine numbers
-    private fun showHomeAppsNumDialog() {
-        val countBinding = DialogLiteHomeAppsBinding.inflate(layoutInflater)
-        val slider = countBinding.homeAppsSlider
-        val showCount = { count: Int ->
-            countBinding.homeAppsCount.text = resources.getQuantityString(R.plurals.lite_app_count, count, count)
-        }
-
-        slider.value = prefs.homeAppsNum.coerceIn(0, 8).toFloat()
-        slider.setLabelFormatter { value -> value.roundToInt().toString() }
-        slider.addOnChangeListener { _, value, _ -> showCount(value.roundToInt()) }
-        showCount(slider.value.roundToInt())
-
-        dialog?.dismiss()
-        dialog = MaterialAlertDialogBuilder(requireContext())
-            .setTitle(R.string.apps_on_home_screen)
-            .setView(countBinding.root)
-            .setPositiveButton(R.string.okay) { _, _ ->
-                val count = slider.value.roundToInt()
-                if (count != prefs.homeAppsNum) {
-                    prefs.homeAppsNum = count
-                    viewModel.refreshHome(true)
-                    refreshSummaries()
-                }
-            }
-            .setNegativeButton(android.R.string.cancel, null)
-            .create()
-            .showRespectingStatusBar()
-    }
 
     private fun showDateTimeDialog() {
         val labels = labelsFor(dateTimeOptions) { dateTimeLabel(it) }
@@ -445,6 +419,24 @@ class SettingsFragment : PreferenceFragmentCompat() {
             onClick()
             true
         }
+        addPreference(preference)
+        return preference
+    }
+
+    private fun PreferenceGroup.slider(
+        @StringRes title: Int,
+        valueFrom: Int,
+        valueTo: Int,
+        value: Int,
+        onChange: (Int) -> Unit,
+    ): SliderPreference {
+        val preference = SliderPreference(context)
+        preference.setTitle(title)
+        preference.isIconSpaceReserved = false
+        preference.valueFrom = valueFrom
+        preference.valueTo = valueTo
+        preference.value = value
+        preference.onValueChange = onChange
         addPreference(preference)
         return preference
     }
