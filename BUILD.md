@@ -33,11 +33,15 @@ New text this fork adds lives in `strings_lite.xml`, in English and French. Othe
 
 ## Building on GitHub
 
-GitHub builds and signs the APK on its servers, and Obtainium on your phone installs each new build as an update. Your PC only needs git, plus Java once to create the signing key.
+GitHub builds and signs the APK on its servers, and Obtainium on your phone installs each new build as an update. Your PC only needs Java once, to create the signing key.
 
-### 1. Create the repository (one time)
+### 1. The repository
 
-On github.com, choose **New repository**. Name it `olauncher-lite`, make it **Public**, and don't add a README, licence or .gitignore. A public repository is the simplest for Obtainium.
+The code lives at <https://github.com/pyrocklast/llauncher>. It's public, which is the simplest setup for Obtainium. You only need a copy on your PC to build or change things there:
+
+```sh
+git clone https://github.com/pyrocklast/llauncher ~/llauncher
+```
 
 ### 2. Add your signing key (one time)
 
@@ -65,23 +69,13 @@ Only if you created the key differently from the command above, also add `KEY_AL
 
 Then delete the text file with `rm ~/olauncher-lite-key.txt`. **Back up the `.jks` file and its password somewhere safe.** GitHub keeps them encrypted and never shows them in logs, but you can't download them back.
 
-### 3. Push the code (one time)
-
-```sh
-cd ~/olauncher-lite
-git remote add origin https://github.com/YOUR_USERNAME/olauncher-lite.git
-git push -u origin master
-```
-
-If git asks for a password, GitHub wants a token rather than your account password. The easiest fix is `sudo dnf install gh`, then `gh auth login` and `gh auth setup-git`, then push again.
-
-### 4. Build a release
+### 3. Build a release
 
 In the repository, open **Actions > Release > Run workflow**. This works from the GitHub website on your phone too. About five minutes later the APK is on the repository's **Releases** page, named like `OlauncherLite-v6.10.27-lite.1.apk`. The number at the end goes up with every build.
 
-### 5. Install with Obtainium (one time)
+### 4. Install with Obtainium (one time)
 
-Install Obtainium from F-Droid, then **Add app**, paste `https://github.com/YOUR_USERNAME/olauncher-lite`, and install. From then on Obtainium checks for new releases and offers them as updates.
+Install Obtainium from F-Droid, then **Add app**, paste `https://github.com/pyrocklast/llauncher`, and install. From then on Obtainium checks for new releases and offers them as updates.
 
 ### Getting Olauncher's updates
 
@@ -138,7 +132,7 @@ keyPassword=your-password
 ### 4. Build
 
 ```sh
-cd olauncher-lite
+cd ~/llauncher
 export JAVA_HOME=~/opt/jdk-21 ANDROID_HOME=~/Android/Sdk
 ./gradlew assembleRelease
 ```
