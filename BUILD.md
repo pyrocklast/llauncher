@@ -25,11 +25,69 @@ A personal fork of [Olauncher](https://github.com/tanujnotes/Olauncher) with eve
   - Long press uses Android's own timing, which follows the "Touch & hold delay" accessibility setting. Upstream added half a second on top.
   - Release builds drop resources nothing uses any more.
 
+- **GitHub builds**: two workflows, **Release** (builds a signed APK and publishes it for Obtainium) and **Sync with Olauncher** (merges upstream's changes). See "Building on GitHub" below.
+
 Everything that makes it a launcher still works: home apps, swipe gestures and swipe apps, clock and date taps, the app drawer and its search, hidden apps, renaming, pinned shortcuts and Private Space.
 
 New text this fork adds lives in `strings_lite.xml`, in English and French. Other languages show those few lines in English.
 
-## Building on Fedora
+## Building on GitHub
+
+GitHub builds and signs the APK on its servers, and Obtainium on your phone installs each new build as an update. Your PC only needs git, plus Java once to create the signing key.
+
+### 1. Create the repository (one time)
+
+On github.com, choose **New repository**. Name it `olauncher-lite`, make it **Public**, and don't add a README, licence or .gitignore. A public repository is the simplest for Obtainium.
+
+### 2. Add your signing key (one time)
+
+If you already made a key for building on your PC, use that one: an APK signed with a different key won't install over one that's already on your phone. Otherwise, create one (any Java works, Fedora's included):
+
+```sh
+sudo dnf install java-25-openjdk-headless
+mkdir -p ~/keys
+keytool -genkeypair -v -keystore ~/keys/olauncher-lite.jks \
+  -alias lite -keyalg RSA -keysize 4096 -validity 36500
+```
+
+Turn the key file into text that GitHub can store:
+
+```sh
+base64 -w0 ~/keys/olauncher-lite.jks > ~/olauncher-lite-key.txt
+```
+
+In the repository, open **Settings > Secrets and variables > Actions** and add two repository secrets:
+
+- `KEYSTORE_BASE64`: the whole contents of `olauncher-lite-key.txt` (open it in Text Editor, select all, copy)
+- `KEYSTORE_PASSWORD`: the key's password
+
+Only if you created the key differently from the command above, also add `KEY_ALIAS` (when it isn't `lite`) and `KEY_PASSWORD` (when the key has a password of its own).
+
+Then delete the text file with `rm ~/olauncher-lite-key.txt`. **Back up the `.jks` file and its password somewhere safe.** GitHub keeps them encrypted and never shows them in logs, but you can't download them back.
+
+### 3. Push the code (one time)
+
+```sh
+cd ~/olauncher-lite
+git remote add origin https://github.com/YOUR_USERNAME/olauncher-lite.git
+git push -u origin master
+```
+
+If git asks for a password, GitHub wants a token rather than your account password. The easiest fix is `sudo dnf install gh`, then `gh auth login` and `gh auth setup-git`, then push again.
+
+### 4. Build a release
+
+In the repository, open **Actions > Release > Run workflow**. This works from the GitHub website on your phone too. About five minutes later the APK is on the repository's **Releases** page, named like `OlauncherLite-v6.10.27-lite.1.apk`. The number at the end goes up with every build.
+
+### 5. Install with Obtainium (one time)
+
+Install Obtainium from F-Droid, then **Add app**, paste `https://github.com/YOUR_USERNAME/olauncher-lite`, and install. From then on Obtainium checks for new releases and offers them as updates.
+
+### Getting Olauncher's updates
+
+Open **Actions > Sync with Olauncher > Run workflow**. It merges Olauncher's new changes into your repository and lists them in the run's summary. Then run **Release** to build them. If Olauncher's changes clash with Lite's, it stops without changing anything, and the merge has to be done in git (see "Updating from upstream" below).
+
+## Building on your PC (Fedora)
 
 ### 1. Java 21 (one time)
 
@@ -101,15 +159,15 @@ Then make it your Home app, either from its own settings ("Set as default launch
 
 ## Updating from upstream
 
-The original project is set up as the `upstream` remote.
+On GitHub, the **Sync with Olauncher** workflow does this for you. To do it by hand on your PC (for example when that workflow reports a clash), note that the original project is set up as the `upstream` remote:
 
 ```sh
 git fetch upstream
 git merge upstream/master
-./gradlew assembleRelease
+./gradlew assembleRelease   # or push, then run Release on GitHub
 ```
 
-Conflicts can only appear in files this fork changed. `git diff upstream/master --stat` lists them. Settings is a full rewrite, so if upstream adds a new setting you'd add it to `SettingsFragment.kt` by hand rather than merging it. The version code follows upstream, so the new APK installs over the old one.
+Conflicts can only appear in files this fork changed. The fork's build settings are all in one block at the end of `app/build.gradle`, so upstream's version bumps don't clash with them. `git diff upstream/master --stat` lists them. Settings is a full rewrite, so if upstream adds a new setting you'd add it to `SettingsFragment.kt` by hand rather than merging it. The version code follows upstream, so the new APK installs over the old one.
 
 ## Changing the name or package
 

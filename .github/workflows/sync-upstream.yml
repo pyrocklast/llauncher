@@ -1,0 +1,45 @@
+# Olauncher Lite: merges Olauncher's latest changes into this repository.
+#
+# Run it from the repository's Actions tab: Sync with Olauncher > Run workflow.
+# Then run Release to build an APK with the changes.
+# If Olauncher's changes clash with Lite's, it stops and changes nothing; the merge then
+# has to be done by hand in git.
+
+name: Sync with Olauncher
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Merge Olauncher's changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git remote add upstream https://github.com/tanujnotes/Olauncher.git
+          git fetch upstream master
+
+          if git merge-base --is-ancestor upstream/master HEAD; then
+            echo "Already up to date with Olauncher. Nothing to do." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          echo "New Olauncher changes:" >> "$GITHUB_STEP_SUMMARY"
+          git log --oneline --no-merges HEAD..upstream/master | sed 's/^/- /' >> "$GITHUB_STEP_SUMMARY"
+
+          if ! git merge --no-edit upstream/master; then
+            git merge --abort
+            echo "::error::Olauncher's changes clash with Lite's, so nothing was changed. The merge has to be done by hand in git."
+            exit 1
+          fi
+          git push
+          echo "Merged. Run the Release workflow to build an APK with these changes." >> "$GITHUB_STEP_SUMMARY"

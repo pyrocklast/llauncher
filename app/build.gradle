@@ -1,14 +1,6 @@
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
 
-// Lite: release signing reads keystore.properties in the project root (never committed).
-// Without that file the release APK is built unsigned. See BUILD.md.
-def keystorePropertiesFile = rootProject.file("keystore.properties")
-def keystoreProperties = new Properties()
-if (keystorePropertiesFile.exists()) {
-    keystorePropertiesFile.withInputStream { keystoreProperties.load(it) }
-}
-
 android {
     compileSdk 36
 
@@ -22,38 +14,20 @@ android {
     }
 
     defaultConfig {
-        // Lite: own package name, so it installs alongside upstream Olauncher
-        applicationId "app.olauncher.lite"
+        applicationId "app.olauncher"
         minSdkVersion 24
         targetSdkVersion 36
         versionCode 114
         versionName "v6.10.27"
-        versionNameSuffix "-lite"
 
         resourceConfigurations += ["en", "ar", "cs", "da", "de", "el", "es-rES", "es-rUS", "fi", "fr", "he", "hi", "hr", "hu", "in", "it", "ja", "ko", "nb", "nl", "pl", "pt-rBR", "ro", "ru-rRU", "sv", "th", "tr", "uk", "vi", "zh"]
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
-    signingConfigs {
-        release {
-            if (keystorePropertiesFile.exists()) {
-                storeFile rootProject.file(keystoreProperties['storeFile'])
-                storePassword keystoreProperties['storePassword']
-                keyAlias keystoreProperties['keyAlias']
-                keyPassword keystoreProperties['keyPassword']
-            }
-        }
-    }
-
     buildTypes {
         release {
-            if (keystorePropertiesFile.exists()) {
-                signingConfig signingConfigs.release
-            }
             debuggable false
             minifyEnabled true
-            // Lite: drop resources nothing uses any more (old icons, animations, layouts)
-            shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
         debug {
@@ -88,11 +62,70 @@ dependencies {
     // Navigation
     implementation libs.navigation.fragment.ktx
 
-    // Lite: native settings screen
-    implementation libs.preference.ktx
-
     //Material dependency
     implementation libs.material
 
     testImplementation libs.junit
+}
+
+// ---------------------------------------------------------------------------------------------
+// Olauncher Lite. Every build setting this fork changes is in this block, so that upstream's
+// own lines above, like its version bumps, merge without conflicts. Gradle applies this block
+// after upstream's, so the values here win. The only other change above is that the
+// WorkManager dependency is gone.
+// ---------------------------------------------------------------------------------------------
+
+// Release signing: on your PC from keystore.properties in the project root (never committed),
+// on GitHub from LITE_* environment variables set by the Release workflow.
+// With neither, the release APK is built unsigned. See BUILD.md.
+def liteKeystoreFile = rootProject.file("keystore.properties")
+def liteKeystore = new Properties()
+if (liteKeystoreFile.exists()) {
+    liteKeystoreFile.withInputStream { liteKeystore.load(it) }
+}
+def liteSigning = [
+        storeFile    : System.getenv("LITE_STORE_FILE") ?: liteKeystore["storeFile"],
+        storePassword: System.getenv("LITE_STORE_PASSWORD") ?: liteKeystore["storePassword"],
+        keyAlias     : System.getenv("LITE_KEY_ALIAS") ?: liteKeystore["keyAlias"],
+        keyPassword  : System.getenv("LITE_KEY_PASSWORD") ?: liteKeystore["keyPassword"],
+]
+
+android {
+    defaultConfig {
+        // Own package name, so it installs alongside upstream Olauncher
+        applicationId "app.olauncher.lite"
+        // The Release workflow names each build after its GitHub release, e.g. v6.10.27-lite.3,
+        // so Obtainium can tell versions apart. Builds on your PC are named e.g. v6.10.27-lite.
+        if (project.hasProperty("liteVersionName")) {
+            versionName project.property("liteVersionName")
+        } else {
+            versionNameSuffix "-lite"
+        }
+    }
+
+    signingConfigs {
+        release {
+            if (liteSigning.storeFile) {
+                storeFile rootProject.file(liteSigning.storeFile)
+                storePassword liteSigning.storePassword
+                keyAlias liteSigning.keyAlias
+                keyPassword liteSigning.keyPassword
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            if (liteSigning.storeFile) {
+                signingConfig signingConfigs.release
+            }
+            // Drop resources nothing uses any more (old icons, animations, layouts)
+            shrinkResources true
+        }
+    }
+}
+
+dependencies {
+    // Native settings screen
+    implementation "androidx.preference:preference-ktx:1.2.1"
 }
