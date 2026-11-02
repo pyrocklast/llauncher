@@ -1,12 +1,16 @@
 package app.olauncher.ui
 
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.os.BatteryManager
 import android.os.Bundle
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat
 import androidx.core.os.bundleOf
 import androidx.core.view.isVisible
 import androidx.lifecycle.Observer
@@ -40,6 +44,17 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
 
     private var _binding: FragmentHomeBinding? = null
     private val binding get() = _binding!!
+
+    // Lite: keeps the date, and the battery level shown with it, current while the home screen is
+    // showing: past midnight, or while charging. Upstream only set them when you came back home.
+    // It runs on Android's once-a-minute time tick, which the clock already listens to, so it adds
+    // no wake-ups, and it stops as soon as the home screen is hidden or the screen turns off.
+    private var dateUpdatesOn = false
+    private val dateUpdater = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (_binding != null) populateDateTime()
+        }
+    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View {
         _binding = FragmentHomeBinding.inflate(inflater, container, false)
@@ -77,6 +92,32 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
         populateHomeScreen(false)
         viewModel.isOlauncherDefault()
         // Lite: the status bar is shown or hidden in BaseFragment, for the drawer too
+        startDateUpdates()
+    }
+
+    override fun onPause() {
+        stopDateUpdates()
+        super.onPause()
+    }
+
+    private fun startDateUpdates() {
+        if (dateUpdatesOn || !Constants.DateTime.isDateVisible(prefs.dateTimeVisibility)) return
+        val filter = IntentFilter().apply {
+            addAction(Intent.ACTION_TIME_TICK)
+            addAction(Intent.ACTION_TIME_CHANGED)
+            addAction(Intent.ACTION_TIMEZONE_CHANGED)
+        }
+        ContextCompat.registerReceiver(requireContext(), dateUpdater, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
+        dateUpdatesOn = true
+    }
+
+    private fun stopDateUpdates() {
+        if (!dateUpdatesOn) return
+        dateUpdatesOn = false
+        try {
+            requireContext().unregisterReceiver(dateUpdater)
+        } catch (_: Exception) {
+        }
     }
 
     override fun onClick(view: View) {
@@ -253,7 +294,8 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
             if (battery > 0)
                 dateText = "$dateText, ${NumberFormat.getPercentInstance(dateLocale).format(battery / 100.0)}"
         }
-        binding.date.text = dateText
+        // Updated every minute while showing: only touch the view when the text actually changes
+        if (binding.date.text.toString() != dateText) binding.date.text = dateText
     }
 
     // Lite: names come straight from prefs, so returning home makes no system calls on the main thread.

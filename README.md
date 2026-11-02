@@ -21,7 +21,7 @@ It installs as a separate app (`app.olauncher.lite`), so it can sit alongside th
 - Separate sliders for the size of app names and of the clock and date, both on top of Android's own font size; settings and menus keep Android's size. The number of home apps is a slider too
 - Long-pressing an app in the drawer opens a normal menu: Rename, Hide, App info, Uninstall. A new name shows everywhere the app is, home screen and swipe settings included; this replaces the Rename button in the home app picker
 - Settings choose what tapping the time and the date opens. Each swipe has one row: tap it to choose the default app or one of yours, or flip its switch to turn the swipe on or off
-- Long presses vibrate, the date follows the launcher's language (or your phone's, if none is set) in its usual short, full or numeric format, and TalkBack can read the search box
+- Long presses vibrate, the date follows the launcher's language (or your phone's, if none is set) in its usual short, full or numeric format and stays current while you look at it, and TalkBack can read the search box
 - Returning home does less work: the app list is cached and refreshed only when apps change, home apps are checked in the background, and long press uses Android's own timing
 
 The home screen and app drawer keep Olauncher's minimal, text-only look.
