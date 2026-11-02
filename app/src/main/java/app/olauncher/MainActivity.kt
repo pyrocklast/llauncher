@@ -20,15 +20,12 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
 import androidx.navigation.findNavController
 import app.olauncher.data.Constants
 import app.olauncher.data.Prefs
 import app.olauncher.databinding.ActivityMainBinding
-import app.olauncher.helper.getColorFromAttr
 import app.olauncher.helper.hasBeenHours
-import app.olauncher.helper.hasBeenMinutes
 import app.olauncher.helper.isDefaultLauncher
 import app.olauncher.helper.isEinkDisplay
 import app.olauncher.helper.isSystemAnimationsDisabled
@@ -38,9 +35,6 @@ import app.olauncher.helper.showLauncherSelector
 import app.olauncher.helper.showRespectingStatusBar
 import com.google.android.material.color.DynamicColors
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
@@ -48,7 +42,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var navController: NavController
     private lateinit var viewModel: MainViewModel
     private lateinit var binding: ActivityMainBinding
-    private var timerJob: Job? = null
+    private var nightMode = Configuration.UI_MODE_NIGHT_UNDEFINED
     private var isResumed = false
     private var profileReceiver: BroadcastReceiver? = null
     private var launcherAppsCallback: LauncherApps.Callback? = null
@@ -66,11 +60,15 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         prefs = Prefs(this)
         if (isEinkDisplay()) prefs.appTheme = AppCompatDelegate.MODE_NIGHT_NO
-        AppCompatDelegate.setDefaultNightMode(prefs.appTheme)
+        // Lite: settings, menus and dialogs follow the phone's dark mode (always light on e-ink).
+        // The launcher's own theme and bold text apply to the home screen and drawer only (BaseFragment).
+        AppCompatDelegate.setDefaultNightMode(
+            if (isEinkDisplay()) AppCompatDelegate.MODE_NIGHT_NO else AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
+        )
         super.onCreate(savedInstanceState)
+        nightMode = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
         // Lite: Material You colours for menus, dialogs and settings on Android 12+
         DynamicColors.applyToActivityIfAvailable(this)
-        if (prefs.boldFont) theme.applyStyle(R.style.BoldFontOverlay, true)
         if (isEinkDisplay() || isSystemAnimationsDisabled()) theme.applyStyle(R.style.NoAnimationOverlay, true)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
@@ -169,8 +167,8 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStop() {
         isResumed = false
-        // Lite: not while the activity is only being recreated (theme, text size, bold font, rotation),
-        // so you stay on the settings screen instead of being sent home
+        // Lite: not while the activity is only being recreated (dark mode switched, rotation),
+        // so you stay on the screen you were on instead of being sent home
         if (!isChangingConfigurations) backToHomeScreen()
         super.onStop()
     }
@@ -191,7 +189,10 @@ class MainActivity : AppCompatActivity() {
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-        AppCompatDelegate.setDefaultNightMode(prefs.appTheme)
+        // Lite: the phone's dark mode was switched. Reload so settings, menus and dialogs pick up
+        // the new colours, and so does the launcher when its theme is set to System.
+        val newNightMode = newConfig.uiMode and Configuration.UI_MODE_NIGHT_MASK
+        if (newNightMode != nightMode && !isEinkDisplay()) recreate()
     }
 
     private fun initObservers(viewModel: MainViewModel) {
@@ -246,25 +247,13 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun restartLauncherOrCheckTheme(forceRestart: Boolean = false) {
-        if (forceRestart || prefs.launcherRestartTimestamp.hasBeenHours(4)) {
+    // Lite: upstream also checked here that the activity's theme matched the launcher theme, and
+    // reloaded if not. The launcher theme is now applied to the home screen and drawer directly.
+    private fun restartLauncherOrCheckTheme() {
+        if (prefs.launcherRestartTimestamp.hasBeenHours(4)) {
             prefs.launcherRestartTimestamp = System.currentTimeMillis()
             cacheDir.deleteRecursively()
             recreate()
-        } else
-            checkTheme()
-    }
-
-    private fun checkTheme() {
-        timerJob?.cancel()
-        timerJob = lifecycleScope.launch {
-            delay(200)
-            val themeMismatch =
-                (prefs.appTheme == AppCompatDelegate.MODE_NIGHT_YES && getColorFromAttr(R.attr.primaryColor) != getColor(R.color.white))
-                        || (prefs.appTheme == AppCompatDelegate.MODE_NIGHT_NO && getColorFromAttr(R.attr.primaryColor) != getColor(R.color.black))
-            // If recreating doesn't fix the theme (e.g. an OEM ROM overriding it), don't recreate in an endless loop (#734)
-            if (themeMismatch && prefs.launcherRestartTimestamp.hasBeenMinutes(1))
-                restartLauncherOrCheckTheme(true)
         }
     }
 

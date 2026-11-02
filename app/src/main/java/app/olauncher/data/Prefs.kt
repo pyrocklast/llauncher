@@ -546,6 +546,20 @@ class Prefs(context: Context) {
         }
     }
 
+    // Lite: home apps keep their own copy of the name, updated when the app is renamed in the drawer
+    fun setHomeAppName(location: Int, name: String) {
+        when (location) {
+            1 -> appName1 = name
+            2 -> appName2 = name
+            3 -> appName3 = name
+            4 -> appName4 = name
+            5 -> appName5 = name
+            6 -> appName6 = name
+            7 -> appName7 = name
+            8 -> appName8 = name
+        }
+    }
+
     fun setAppActivityClassName(location: Int, activityClassName: String) {
         when (location) {
             1 -> appActivityClassName1 = activityClassName

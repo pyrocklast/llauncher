@@ -2,13 +2,11 @@ package app.olauncher.ui
 
 import android.content.Context
 import android.os.BatteryManager
-import android.os.Build
 import android.os.Bundle
 import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.view.WindowInsets
 import androidx.core.os.bundleOf
 import androidx.core.view.isVisible
 import androidx.lifecycle.Observer
@@ -78,8 +76,7 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
         super.onResume()
         populateHomeScreen(false)
         viewModel.isOlauncherDefault()
-        if (prefs.showStatusBar) showStatusBar()
-        else hideStatusBar()
+        // Lite: the status bar is shown or hidden in BaseFragment, for the drawer too
     }
 
     override fun onClick(view: View) {
@@ -135,19 +132,10 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
             R.id.homeApp6 -> showAppList(Constants.FLAG_SET_HOME_APP_6, prefs.appName6.isNotEmpty(), true)
             R.id.homeApp7 -> showAppList(Constants.FLAG_SET_HOME_APP_7, prefs.appName7.isNotEmpty(), true)
             R.id.homeApp8 -> showAppList(Constants.FLAG_SET_HOME_APP_8, prefs.appName8.isNotEmpty(), true)
-            R.id.clock -> {
-                showAppList(Constants.FLAG_SET_CLOCK_APP)
-                prefs.clockAppPackage = ""
-                prefs.clockAppClassName = ""
-                prefs.clockAppUser = ""
-            }
-
-            R.id.date -> {
-                showAppList(Constants.FLAG_SET_CALENDAR_APP)
-                prefs.calendarAppPackage = ""
-                prefs.calendarAppClassName = ""
-                prefs.calendarAppUser = ""
-            }
+            // Lite: the current app stays until you pick another, so backing out changes nothing.
+            // Settings > Clock and date can set it back to the default app.
+            R.id.clock -> showAppList(Constants.FLAG_SET_CLOCK_APP)
+            R.id.date -> showAppList(Constants.FLAG_SET_CALENDAR_APP)
 
             R.id.setDefaultLauncher -> {
                 prefs.hideSetDefaultLauncher = true
@@ -410,27 +398,6 @@ class HomeFragment : BaseFragment(), View.OnClickListener, View.OnLongClickListe
                 )
             )
             e.printStackTrace()
-        }
-    }
-
-    private fun showStatusBar() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
-            requireActivity().window.insetsController?.show(WindowInsets.Type.statusBars())
-        else
-            @Suppress("DEPRECATION", "InlinedApi")
-            requireActivity().window.decorView.apply {
-                systemUiVisibility = View.SYSTEM_UI_FLAG_LAYOUT_STABLE or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-            }
-    }
-
-    private fun hideStatusBar() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R)
-            requireActivity().window.insetsController?.hide(WindowInsets.Type.statusBars())
-        else {
-            @Suppress("DEPRECATION")
-            requireActivity().window.decorView.apply {
-                systemUiVisibility = View.SYSTEM_UI_FLAG_IMMERSIVE or View.SYSTEM_UI_FLAG_FULLSCREEN
-            }
         }
     }
 

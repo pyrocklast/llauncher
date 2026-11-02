@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Lite: the launcher's own colours, applied only to the home screen and app drawer
+     (see LiteTheme.kt). Settings, menus and dialogs follow the phone's dark mode instead.
+     The colours are the ones upstream's AppTheme uses for its light and dark themes. -->
+<resources>
+
+    <!-- Light theme: dark text -->
+    <style name="ThemeOverlay.Lite.LauncherLight" parent="">
+        <item name="primaryColor">@color/black</item>
+        <item name="primaryInverseColor">@color/blackInverse</item>
+        <item name="primaryTextShadowColor">@color/blackInverseTrans50</item>
+        <item name="primaryColorTrans50">@color/blackTrans50</item>
+        <item name="primaryColorTrans80">@color/blackTrans80</item>
+        <item name="primaryColorInverseTrans50">@color/blackInverseTrans50</item>
+        <item name="primaryColorInverseTrans80">@color/blackInverseTrans80</item>
+        <item name="primaryColorInverseTrans90">@color/blackInverseTrans90</item>
+        <item name="primaryShadeColor">@color/blackInverseTrans10</item>
+        <item name="primaryShadeDarkColor">@color/blackInverseTrans25</item>
+        <item name="dialogShadeColor">@color/blackInverseTrans50</item>
+    </style>
+
+    <!-- Dark theme: light text -->
+    <style name="ThemeOverlay.Lite.LauncherDark" parent="">
+        <item name="primaryColor">@color/white</item>
+        <item name="primaryInverseColor">@color/whiteInverse</item>
+        <item name="primaryTextShadowColor">@color/whiteInverseTrans50</item>
+        <item name="primaryColorTrans50">@color/whiteTrans50</item>
+        <item name="primaryColorTrans80">@color/whiteTrans80</item>
+        <item name="primaryColorInverseTrans50">@color/whiteInverseTrans50</item>
+        <item name="primaryColorInverseTrans80">@color/whiteInverseTrans80</item>
+        <item name="primaryColorInverseTrans90">@color/whiteInverseTrans90</item>
+        <item name="primaryShadeColor">@color/whiteInverseTrans10</item>
+        <item name="primaryShadeDarkColor">@color/whiteInverseTrans25</item>
+        <item name="dialogShadeColor">@color/whiteInverseTrans50</item>
+    </style>
+
+</resources>

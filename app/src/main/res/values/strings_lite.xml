@@ -33,8 +33,18 @@
     <string name="lite_set_as_home_first">Set %1$s as your Home app first</string>
     <string name="lite_swipe_left">Swipe left</string>
     <string name="lite_swipe_right">Swipe right</string>
+    <string name="lite_status_bar_off_summary">Battery level shows after the date</string>
+    <string name="lite_tap_time">Tapping the time opens</string>
+    <string name="lite_tap_date">Tapping the date opens</string>
+    <string name="lite_default_clock_app">Default clock app</string>
+    <string name="lite_default_calendar_app">Default calendar app</string>
+    <string name="lite_default_camera_app">Default camera app</string>
+    <string name="lite_default_phone_app">Default phone app</string>
+    <string name="lite_choose_app_ellipsis">Choose an app…</string>
     <!-- App drawer -->
     <string name="lite_search_apps">Search apps</string>
     <string name="lite_choose_app">Choose an app</string>
     <string name="lite_original_name">Original name</string>
+    <!-- %1$s and %2$s are the "App drawer" and "Hidden apps" settings -->
+    <string name="lite_first_hide">App hidden. Find it in Settings &gt; %1$s &gt; %2$s.</string>
 </resources>

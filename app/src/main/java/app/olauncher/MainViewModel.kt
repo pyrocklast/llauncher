@@ -550,4 +550,101 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             }
         }
     }
+
+    // Lite: renaming
+
+    /** Where a home app or swipe app points, and how to update the name shown for it. */
+    private class SavedApp(
+        val packageName: String,
+        val user: String,
+        val activityClassName: String?,
+        val isShortcut: Boolean,
+        val shortcutId: String,
+        val setName: (String) -> Unit,
+    ) {
+        fun isSameAs(appModel: AppModel): Boolean = when (appModel) {
+            // App names are saved per package, so the drawer shows the new name for every profile
+            is AppModel.App -> !isShortcut && packageName == appModel.appPackage
+            is AppModel.PinnedShortcut -> isShortcut && packageName == appModel.appPackage &&
+                    shortcutId == appModel.shortcutId && user == appModel.user.toString()
+            else -> false
+        }
+    }
+
+    /**
+     * Renames an app or shortcut in the drawer, and wherever it's on the home screen or opened by a
+     * swipe, since those keep their own copy of the name. An empty [newLabel] brings back its own name.
+     */
+    fun renameApp(appModel: AppModel, newLabel: String) {
+        when (appModel) {
+            is AppModel.PinnedShortcut -> {
+                prefs.setAppRenameLabel(appModel.identity, newLabel)
+                // Older versions saved shortcut names under the bare shortcut id
+                if (newLabel.isEmpty()) prefs.setAppRenameLabel(appModel.shortcutId, "")
+            }
+
+            is AppModel.App -> prefs.setAppRenameLabel(appModel.appPackage, newLabel)
+            else -> return
+        }
+        refreshAppList()
+
+        val saved = buildList {
+            for (location in 1..8) add(
+                SavedApp(
+                    prefs.getAppPackage(location), prefs.getAppUser(location),
+                    prefs.getAppActivityClassName(location), prefs.getIsShortcut(location),
+                    prefs.getShortcutId(location),
+                ) { prefs.setHomeAppName(location, it) }
+            )
+            add(
+                SavedApp(
+                    prefs.appPackageSwipeLeft, prefs.appUserSwipeLeft, prefs.appActivityClassNameSwipeLeft,
+                    prefs.isShortcutSwipeLeft, prefs.shortcutIdSwipeLeft,
+                ) { prefs.appNameSwipeLeft = it }
+            )
+            add(
+                SavedApp(
+                    prefs.appPackageSwipeRight, prefs.appUserSwipeRight, prefs.appActivityClassNameRight,
+                    prefs.isShortcutSwipeRight, prefs.shortcutIdSwipeRight,
+                ) { prefs.appNameSwipeRight = it }
+            )
+        }.filter { it.isSameAs(appModel) }
+        if (saved.isEmpty()) return
+
+        viewModelScope.launch {
+            val names = if (newLabel.isNotEmpty()) saved.map { newLabel }
+            else withContext(Dispatchers.IO) { saved.map { originalLabel(it) } }
+            saved.forEachIndexed { i, app ->
+                // If the original name can't be read, the current one stays
+                if (names[i].isNotEmpty()) app.setName(names[i])
+            }
+            refreshHome(false)
+            updateSwipeApps()
+        }
+    }
+
+    /** The name the app or shortcut gives itself, or "" if it can't be read. */
+    private fun originalLabel(app: SavedApp): String = try {
+        val launcherApps = appContext.getSystemService(Context.LAUNCHER_APPS_SERVICE) as LauncherApps
+        val user = getUserHandleFromString(appContext, app.user)
+        if (app.isShortcut) {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N_MR1) ""
+            else {
+                val query = LauncherApps.ShortcutQuery()
+                    .setPackage(app.packageName)
+                    .setShortcutIds(listOf(app.shortcutId))
+                    .setQueryFlags(LauncherApps.ShortcutQuery.FLAG_MATCH_PINNED)
+                val shortcut = launcherApps.getShortcuts(query, user)?.firstOrNull()
+                (shortcut?.shortLabel ?: shortcut?.longLabel)?.toString().orEmpty()
+            }
+        } else {
+            val activities = launcherApps.getActivityList(app.packageName, user)
+            val activity = activities.firstOrNull { it.componentName.className == app.activityClassName }
+                ?: activities.firstOrNull()
+            activity?.label?.toString().orEmpty()
+        }
+    } catch (e: Exception) {
+        e.printStackTrace()
+        ""
+    }
 }

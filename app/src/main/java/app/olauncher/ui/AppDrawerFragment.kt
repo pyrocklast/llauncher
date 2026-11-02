@@ -17,6 +17,7 @@ import android.view.inputmethod.BaseInputConnection
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.SearchView
 import androidx.core.view.AccessibilityDelegateCompat
@@ -56,7 +57,6 @@ class AppDrawerFragment : BaseFragment() {
     private var cachedIsCjkKeyboard: Boolean? = null
 
     private var flag = Constants.FLAG_LAUNCH_APP
-    private var canRename = false
     private var currentAppList: List<AppModel>? = null
     private var currentPrivateSpaceApps: List<AppModel>? = null
     private var currentPrivateSpaceLocked: Boolean = true
@@ -81,14 +81,12 @@ class AppDrawerFragment : BaseFragment() {
         prefs = Prefs(requireContext())
         arguments?.let {
             flag = it.getInt(Constants.Key.FLAG, Constants.FLAG_LAUNCH_APP)
-            canRename = it.getBoolean(Constants.Key.RENAME, false)
         }
 
         initViews()
         initSearch()
         initAdapter()
         initObservers()
-        initClickListeners()
     }
 
     private fun initViews() {
@@ -133,8 +131,6 @@ class AppDrawerFragment : BaseFragment() {
                 try {
                     adapter.allowAutoLaunch = !isSearchComposing()
                     adapter.filter.filter(newText)
-                    binding.appRename.visibility =
-                        if (canRename && newText.isNotBlank()) View.VISIBLE else View.GONE
                     return true
                 } catch (e: Exception) {
                     e.printStackTrace()
@@ -264,29 +260,6 @@ class AppDrawerFragment : BaseFragment() {
         adapter.filter.filter(binding.search.query)
     }
 
-    private fun initClickListeners() {
-        binding.appRename.setOnClickListener {
-            val name = binding.search.query.toString().trim()
-            if (name.isEmpty()) {
-                requireContext().showToast(getString(R.string.type_a_new_app_name_first))
-                binding.search.showKeyboard()
-                return@setOnClickListener
-            }
-
-            when (flag) {
-                Constants.FLAG_SET_HOME_APP_1 -> prefs.appName1 = name
-                Constants.FLAG_SET_HOME_APP_2 -> prefs.appName2 = name
-                Constants.FLAG_SET_HOME_APP_3 -> prefs.appName3 = name
-                Constants.FLAG_SET_HOME_APP_4 -> prefs.appName4 = name
-                Constants.FLAG_SET_HOME_APP_5 -> prefs.appName5 = name
-                Constants.FLAG_SET_HOME_APP_6 -> prefs.appName6 = name
-                Constants.FLAG_SET_HOME_APP_7 -> prefs.appName7 = name
-                Constants.FLAG_SET_HOME_APP_8 -> prefs.appName8 = name
-            }
-            closeDrawer()
-        }
-    }
-
     // Lite: long-press menu for an app or shortcut in the drawer
 
     private fun showAppMenu(appModel: AppModel, anchor: View) {
@@ -312,15 +285,19 @@ class AppDrawerFragment : BaseFragment() {
         }
     }
 
+    // Lite: the one way to rename. Upstream also had a Rename button in the picker for home apps,
+    // which named that home app only; a rename here shows everywhere the app is.
     private fun showRenameDialog(appModel: AppModel) {
-        val renameBinding = DialogRenameBinding.inflate(layoutInflater)
+        val builder = MaterialAlertDialogBuilder(requireContext())
+        // The dialog's own context, so the text field gets the dialog's colours
+        val renameBinding = DialogRenameBinding.inflate(LayoutInflater.from(builder.context))
         if (appModel is AppModel.App)
             renameBinding.renameInputLayout.hint = getOriginalAppName(appModel)
         renameBinding.renameInput.setText(appModel.appLabel)
         renameBinding.renameInput.setSelectAllOnFocus(true)
 
         dialog?.dismiss()
-        val renameDialog = MaterialAlertDialogBuilder(requireContext())
+        val renameDialog = builder
             .setTitle(R.string.rename)
             .setView(renameBinding.root)
             // An empty name restores the original one
@@ -341,19 +318,7 @@ class AppDrawerFragment : BaseFragment() {
         dialog = renameDialog
     }
 
-    private fun renameApp(appModel: AppModel, renameLabel: String) {
-        when (appModel) {
-            is AppModel.PinnedShortcut -> {
-                prefs.setAppRenameLabel(appModel.identity, renameLabel)
-                // Older versions saved shortcut names under the bare shortcut id
-                if (renameLabel.isEmpty()) prefs.setAppRenameLabel(appModel.shortcutId, "")
-            }
-
-            is AppModel.App -> prefs.setAppRenameLabel(appModel.appPackage, renameLabel)
-            else -> return
-        }
-        viewModel.refreshAppList()
-    }
+    private fun renameApp(appModel: AppModel, renameLabel: String) = viewModel.renameApp(appModel, renameLabel)
 
     private fun toggleHidden(appModel: AppModel) {
         if (appModel !is AppModel.App) return
@@ -375,11 +340,13 @@ class AppDrawerFragment : BaseFragment() {
         prefs.hiddenApps = newSet
         if (newSet.isEmpty())
             closeDrawer()
+        // Lite: a short note the first time, instead of upstream's dialog and trip to settings
         if (prefs.firstHide) {
-            binding.search.hideKeyboard()
             prefs.firstHide = false
-            viewModel.showDialog.postValue(Constants.Dialog.HIDDEN)
-            findNavController().navigate(R.id.action_appListFragment_to_settingsFragment2)
+            requireContext().showToast(
+                getString(R.string.lite_first_hide, getString(R.string.lite_app_drawer), getString(R.string.hidden_apps)),
+                Toast.LENGTH_LONG
+            )
         }
         viewModel.refreshAppList()
         viewModel.getHiddenApps()

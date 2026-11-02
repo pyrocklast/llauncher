@@ -2,6 +2,8 @@ package app.olauncher.ui
 
 import android.animation.Animator
 import android.animation.ValueAnimator
+import android.content.Context
+import android.content.pm.LauncherApps
 import android.os.Bundle
 import android.os.Process
 import android.util.TypedValue
@@ -35,16 +37,16 @@ import app.olauncher.data.LitePrefs
 import app.olauncher.data.Prefs
 import app.olauncher.databinding.DialogLiteTextSizeBinding
 import app.olauncher.databinding.FragmentLiteSettingsBinding
+import app.olauncher.helper.applySettingsSystemBars
 import app.olauncher.helper.dpToPx
 import app.olauncher.helper.formatHomeDate
-import app.olauncher.helper.hideStatusBar
+import app.olauncher.helper.getUserHandleFromString
 import app.olauncher.helper.isEinkDisplay
 import app.olauncher.helper.isSystemAnimationsDisabled
 import app.olauncher.helper.isTablet
 import app.olauncher.helper.openAppInfo
-import app.olauncher.helper.showRespectingStatusBar
-import app.olauncher.helper.showStatusBar
 import app.olauncher.helper.showToast
+import app.olauncher.helper.withLauncherFont
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import java.text.NumberFormat
 import kotlin.math.abs
@@ -55,6 +57,10 @@ import kotlin.math.roundToInt
  *
  * Values still live in [Prefs], exactly as upstream stores them. The preferences here are not
  * persisted themselves; they show the current value and write changes back through [Prefs].
+ *
+ * It's a normal Android settings screen: it follows the phone's dark mode and font, and always
+ * shows the status bar. The launcher's theme, bold text and status bar settings change the home
+ * screen and app drawer only.
  */
 class SettingsFragment : PreferenceFragmentCompat() {
 
@@ -75,8 +81,11 @@ class SettingsFragment : PreferenceFragmentCompat() {
     private lateinit var appTheme: Preference
     private lateinit var textSize: Preference
     private lateinit var clockSize: Preference
-    private lateinit var swipeLeftApp: Preference
-    private lateinit var swipeRightApp: Preference
+    private lateinit var clockApp: Preference
+    private lateinit var calendarApp: Preference
+    private lateinit var statusBar: SwitchPreferenceCompat
+    private lateinit var swipeLeft: SplitSwitchPreference
+    private lateinit var swipeRight: SplitSwitchPreference
 
     private val alignments = intArrayOf(Gravity.START, Gravity.CENTER, Gravity.END)
     private val dateTimeOptions = intArrayOf(Constants.DateTime.ON, Constants.DateTime.DATE_ONLY, Constants.DateTime.OFF)
@@ -126,6 +135,26 @@ class SettingsFragment : PreferenceFragmentCompat() {
             dateTime = item(R.string.lite_show) { showDateTimeDialog() }
             dateStyle = item(R.string.lite_date_style) { showDateStyleDialog() }
             clockSize = item(R.string.lite_size) { showClockSizeDialog() }
+            clockApp = item(R.string.lite_tap_time) {
+                showTapAppDialog(
+                    R.string.lite_tap_time, R.string.lite_default_clock_app,
+                    isDefault = prefs.clockAppPackage.isBlank(), chooseFlag = Constants.FLAG_SET_CLOCK_APP,
+                ) {
+                    prefs.clockAppPackage = ""
+                    prefs.clockAppClassName = ""
+                    prefs.clockAppUser = ""
+                }
+            }
+            calendarApp = item(R.string.lite_tap_date) {
+                showTapAppDialog(
+                    R.string.lite_tap_date, R.string.lite_default_calendar_app,
+                    isDefault = prefs.calendarAppPackage.isBlank(), chooseFlag = Constants.FLAG_SET_CALENDAR_APP,
+                ) {
+                    prefs.calendarAppPackage = ""
+                    prefs.calendarAppClassName = ""
+                    prefs.calendarAppUser = ""
+                }
+            }
         }
 
         screen.category(R.string.lite_app_drawer).apply {
@@ -140,36 +169,28 @@ class SettingsFragment : PreferenceFragmentCompat() {
         screen.category(R.string.appearance).apply {
             appTheme = item(R.string.lite_theme) { showThemeDialog() }
             textSize = item(R.string.lite_app_name_size) { showAppNameSizeDialog() }
+            // These apply to the home screen and drawer when you go back to them; nothing reloads
             switch(R.string.bold_font, prefs.boldFont) { checked ->
                 prefs.boldFont = checked
-                requireActivity().recreate()
                 true
             }
-            // It affects every screen of the launcher, not just home
-            switch(R.string.lite_show_status_bar, prefs.showStatusBar) { checked ->
+            statusBar = switch(R.string.lite_show_status_bar, prefs.showStatusBar) { checked ->
                 prefs.showStatusBar = checked
-                if (checked) requireActivity().window.showStatusBar()
-                else requireActivity().window.hideStatusBar()
+                refreshSummaries()
                 true
             }
         }
 
+        // One row per swipe: the text chooses the app, the switch turns the swipe on or off
         screen.category(R.string.gestures).apply {
-            switch(R.string.lite_swipe_left, prefs.swipeLeftEnabled) { checked ->
+            swipeLeft = splitSwitch(R.string.lite_swipe_left, prefs.swipeLeftEnabled,
+                onClick = { pickApp(Constants.FLAG_SET_SWIPE_LEFT_APP) }) { checked ->
                 prefs.swipeLeftEnabled = checked
-                swipeLeftApp.isEnabled = checked
-                true
             }
-            swipeLeftApp = item(R.string.swipe_left_app) { pickApp(Constants.FLAG_SET_SWIPE_LEFT_APP) }
-            swipeLeftApp.isEnabled = prefs.swipeLeftEnabled
-
-            switch(R.string.lite_swipe_right, prefs.swipeRightEnabled) { checked ->
+            swipeRight = splitSwitch(R.string.lite_swipe_right, prefs.swipeRightEnabled,
+                onClick = { pickApp(Constants.FLAG_SET_SWIPE_RIGHT_APP) }) { checked ->
                 prefs.swipeRightEnabled = checked
-                swipeRightApp.isEnabled = checked
-                true
             }
-            swipeRightApp = item(R.string.swipe_right_app) { pickApp(Constants.FLAG_SET_SWIPE_RIGHT_APP) }
-            swipeRightApp.isEnabled = prefs.swipeRightEnabled
         }
 
         screen.category(R.string.lite_about).apply {
@@ -222,6 +243,12 @@ class SettingsFragment : PreferenceFragmentCompat() {
         return null
     }
 
+    // Lite: shown here even when hidden on the home screen, like any settings screen
+    override fun onResume() {
+        super.onResume()
+        requireActivity().applySettingsSystemBars()
+    }
+
     override fun onDestroyView() {
         dialog?.dismiss()
         dialog = null
@@ -262,13 +289,38 @@ class SettingsFragment : PreferenceFragmentCompat() {
         dateStyle.isEnabled = dateShown
         clockSize.summary = formatPercent(litePrefs.clockScale)
         clockSize.isEnabled = prefs.dateTimeVisibility != Constants.DateTime.OFF
+        clockApp.summary = appLabel(prefs.clockAppPackage, prefs.clockAppClassName, prefs.clockAppUser)
+            ?: getString(R.string.lite_default_clock_app)
+        clockApp.isEnabled = Constants.DateTime.isTimeVisible(prefs.dateTimeVisibility)
+        calendarApp.summary = appLabel(prefs.calendarAppPackage, prefs.calendarAppClassName, prefs.calendarAppUser)
+            ?: getString(R.string.lite_default_calendar_app)
+        calendarApp.isEnabled = dateShown
         homeAlignment.summary = getString(alignmentLabel(prefs.homeAlignment))
         bottomAlignment.isChecked = prefs.homeBottomAlignment
         drawerAlignment.summary = getString(alignmentLabel(prefs.appLabelAlignment))
         appTheme.summary = getString(themeLabel(prefs.appTheme))
         textSize.summary = formatPercent(prefs.textSizeScale)
-        swipeLeftApp.summary = prefs.appNameSwipeLeft
-        swipeRightApp.summary = prefs.appNameSwipeRight
+        // With the status bar hidden, the battery level is added to the date (when it's shown)
+        statusBar.summaryOff = if (dateShown) getString(R.string.lite_status_bar_off_summary) else null
+        swipeLeft.isChecked = prefs.swipeLeftEnabled
+        swipeLeft.summary = if (prefs.appPackageSwipeLeft.isBlank()) getString(R.string.lite_default_camera_app)
+        else prefs.appNameSwipeLeft
+        swipeRight.isChecked = prefs.swipeRightEnabled
+        swipeRight.summary = if (prefs.appPackageSwipeRight.isBlank()) getString(R.string.lite_default_phone_app)
+        else prefs.appNameSwipeRight
+    }
+
+    // The name of the app chosen for the clock or date, or null for Android's default app
+    private fun appLabel(packageName: String, className: String?, user: String): String? {
+        if (packageName.isBlank()) return null
+        return try {
+            val launcherApps = requireContext().getSystemService(Context.LAUNCHER_APPS_SERVICE) as LauncherApps
+            val activities = launcherApps.getActivityList(packageName, getUserHandleFromString(requireContext(), user))
+            (activities.firstOrNull { it.componentName.className == className } ?: activities.firstOrNull())
+                ?.label?.toString() ?: packageName
+        } catch (_: Exception) {
+            packageName
+        }
     }
 
     // Choice dialogs
@@ -313,11 +365,27 @@ class SettingsFragment : PreferenceFragmentCompat() {
     private fun showThemeDialog() {
         val labels = labelsFor(themeOptions) { themeLabel(it) }
         showChoiceDialog(R.string.lite_theme, labels, themeOptions.indexOf(prefs.appTheme)) { which ->
-            val theme = themeOptions[which]
-            prefs.appTheme = theme
+            // The home screen and drawer use it when you go back to them; settings keep the phone's theme
+            prefs.appTheme = themeOptions[which]
             refreshSummaries()
-            if (AppCompatDelegate.getDefaultNightMode() != theme)
-                requireActivity().recreate()
+        }
+    }
+
+    // Lite: what tapping the clock or date opens: Android's default app for it, or one you choose.
+    // Long-pressing the clock or date on the home screen chooses one too.
+    private fun showTapAppDialog(
+        @StringRes title: Int,
+        @StringRes defaultLabel: Int,
+        isDefault: Boolean,
+        chooseFlag: Int,
+        resetToDefault: () -> Unit,
+    ) {
+        val labels = arrayOf<CharSequence>(getString(defaultLabel), getString(R.string.lite_choose_app_ellipsis))
+        showChoiceDialog(title, labels, if (isDefault) 0 else 1) { which ->
+            if (which == 0) {
+                resetToDefault()
+                refreshSummaries()
+            } else pickApp(chooseFlag)
         }
     }
 
@@ -363,7 +431,9 @@ class SettingsFragment : PreferenceFragmentCompat() {
         previews: (DialogLiteTextSizeBinding) -> List<TextView>,
         onApply: (Float) -> Unit,
     ) {
-        val sizeBinding = DialogLiteTextSizeBinding.inflate(layoutInflater)
+        val builder = MaterialAlertDialogBuilder(requireContext())
+        // The dialog's own colours, with the launcher's font weight so the preview matches home
+        val sizeBinding = DialogLiteTextSizeBinding.inflate(LayoutInflater.from(builder.context.withLauncherFont()))
         val lines = previews(sizeBinding)
         val pxAt100 = lines.map { it.textSize }
         val slider = sizeBinding.textSizeSlider
@@ -379,7 +449,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
         showPreview(slider.value)
 
         dialog?.dismiss()
-        dialog = MaterialAlertDialogBuilder(requireContext())
+        dialog = builder
             .setTitle(title)
             .setView(sizeBinding.root)
             .setPositiveButton(R.string.okay) { _, _ ->
@@ -388,7 +458,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
             }
             .setNegativeButton(android.R.string.cancel, null)
             .create()
-            .showRespectingStatusBar()
+            .apply { show() }
     }
 
     // Up to three of your home apps, or the app's name when none are set
@@ -415,7 +485,7 @@ class SettingsFragment : PreferenceFragmentCompat() {
             }
             .setNegativeButton(android.R.string.cancel, null)
             .create()
-            .showRespectingStatusBar()
+            .apply { show() }
     }
 
     // Navigation
@@ -507,6 +577,25 @@ class SettingsFragment : PreferenceFragmentCompat() {
         preference.valueTo = valueTo
         preference.value = value
         preference.onValueChange = onChange
+        addPreference(preference)
+        return preference
+    }
+
+    private fun PreferenceGroup.splitSwitch(
+        @StringRes title: Int,
+        checked: Boolean,
+        onClick: () -> Unit,
+        onChange: (Boolean) -> Unit,
+    ): SplitSwitchPreference {
+        val preference = SplitSwitchPreference(context)
+        preference.setTitle(title)
+        preference.isIconSpaceReserved = false
+        preference.isChecked = checked
+        preference.onCheckedChange = onChange
+        preference.setOnPreferenceClickListener {
+            onClick()
+            true
+        }
         addPreference(preference)
         return preference
     }

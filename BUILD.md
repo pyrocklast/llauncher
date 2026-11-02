@@ -14,15 +14,17 @@ A personal fork of [Olauncher](https://github.com/tanujnotes/Olauncher) with eve
 
 ## What's changed
 
-- **Native look for menus, dialogs and settings**: the app uses Android's Material 3 theme, with Material You colours from your wallpaper on Android 12 and later.
+- **Native look for menus, dialogs and settings**: the app uses Android's Material 3 theme, with Material You colours from your wallpaper on Android 12 and later. Settings, menus and dialogs follow the phone's dark mode and font, and settings always shows the status bar. The launcher's theme, bold text and status bar settings apply to the home screen and app drawer only.
   - Settings is a standard Android settings screen titled "Olauncher Lite settings", with a large title bar that shrinks as you scroll and a back arrow. Setting the default launcher comes first, then sections for each part of the launcher: Home screen, Clock and date, App drawer, Appearance, Gestures and About, with switches, sliders and choice dialogs. Hidden apps (with a count, under App drawer), drawer alignment and the System theme have their own rows instead of hidden taps and long presses, and App info (under About) shows the version.
   - The number of apps on the home screen is a slider right in the settings list, applied as you move it.
   - App name size is a slider with a preview of your home apps. It applies only to app names (home screen, drawer and its search box), not to settings or menus.
   - Clock and date size is a separate slider, previewed with the live time and date.
   - Both sizes are relative to Android's own font size, so raising that for the whole phone enlarges the launcher too.
   - Date style: short ("lun. 2 nov.") or full ("lundi 2 novembre").
-  - Changing the theme or bold font keeps you on the settings screen instead of sending you home. Sizes apply without reloading anything.
-  - Long-pressing an app in the drawer opens a normal pop-up menu (Rename, Hide, App info, Uninstall). Rename opens a dialog, with a button to restore the original name.
+  - Clock and date has rows for what tapping the time and the date opens: Android's default app, or one you choose. Long-pressing the clock or date on the home screen still chooses an app, but no longer forgets the current one if you back out.
+  - Gestures has one row per swipe, like Android's Wi-Fi row: tap the text to choose the app, flip the switch to turn the swipe on or off.
+  - Theme, bold font and sizes apply without reloading anything; the home screen and drawer use them when you go back.
+  - Long-pressing an app in the drawer opens a normal pop-up menu (Rename, Hide, App info, Uninstall). Rename opens a dialog, with a button to restore the original name. The new name also shows on the home screen and in the swipe settings, so the app picker's separate Rename button is gone. Hiding an app the first time shows a short note on where to find it, instead of a dialog and a trip to settings.
   - Messages use standard Material dialogs.
 - The home screen and the app drawer keep Olauncher's own minimal text style.
 - **Small touches**: long presses give the usual short vibration; the date uses the language chosen for the launcher in Android's settings, or else the phone's language, in that language's usual format; swipe distances no longer depend on how sharp the screen is; the keyboard opens with Android's current method; TalkBack reads the drawer's search box as "Search apps".
